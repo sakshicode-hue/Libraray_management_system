@@ -86,7 +86,7 @@ async def add_member(member_data: MemberCreate):
     max_books = 10 if member_data.membership_type == "premium" else settings.MAX_BOOKS_PER_MEMBER
     
     member_doc = {
-        **member_data.dict(),
+        **member_data.model_dump(),
         "membership_id": await generate_membership_id(),
         "membership_start": datetime.utcnow(),
         "membership_end": datetime.utcnow() + timedelta(days=365),  # 1 year
@@ -110,7 +110,7 @@ async def update_member(member_id: str, member_update: MemberUpdate):
             detail="Invalid member ID"
         )
     
-    update_data = {k: v for k, v in member_update.dict().items() if v is not None}
+    update_data = {k: v for k, v in member_update.model_dump().items() if v is not None}
     
     if not update_data:
         raise HTTPException(

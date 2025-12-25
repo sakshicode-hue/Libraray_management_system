@@ -19,7 +19,7 @@ async def add_book(book: BookCreate):
         )
     
     book_doc = {
-        **book.dict(),
+        **book.model_dump(),
         "available_copies": book.total_copies,
         "created_at": datetime.utcnow()
     }
@@ -102,7 +102,7 @@ async def update_book(book_id: str, book_update: BookUpdate):
         )
     
     # Get update data (exclude None values)
-    update_data = {k: v for k, v in book_update.dict().items() if v is not None}
+    update_data = {k: v for k, v in book_update.model_dump().items() if v is not None}
     
     if not update_data:
         raise HTTPException(

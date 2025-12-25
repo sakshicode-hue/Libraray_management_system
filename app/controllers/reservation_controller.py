@@ -92,7 +92,7 @@ async def create_reservation(reservation_data: ReservationCreate):
     })
     
     reservation_doc = {
-        **reservation_data.dict(),
+        **reservation_data.model_dump(),
         "reservation_date": datetime.utcnow(),
         "status": "active",
         "queue_position": queue_count + 1,
