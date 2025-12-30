@@ -1,12 +1,12 @@
 // components/borrow/RecentBorrowsTable.tsx
 
 interface Transaction {
-  id: number;
+  id: string | number;
   memberName: string;
   bookTitle: string;
   borrowDate: string;
   dueDate: string;
-  status: 'Active' | 'Returned' | 'Overdue' | 'Renewed';
+  status: string; // Relaxed to accept API status values
 }
 
 interface RecentBorrowsTableProps {
@@ -15,15 +15,16 @@ interface RecentBorrowsTableProps {
 
 export default function RecentBorrowsTable({ transactions }: RecentBorrowsTableProps) {
   const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'Active': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'Returned': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'Overdue': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'Renewed': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+    switch (status.toLowerCase()) {
+      case 'active':
+      case 'borrowed': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'returned': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'overdue': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'renewed': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
   };
-  
+
   // If no transactions, show empty state
   if (transactions.length === 0) {
     return (
@@ -34,7 +35,7 @@ export default function RecentBorrowsTable({ transactions }: RecentBorrowsTableP
       </div>
     );
   }
-  
+
   return (
     <div className="overflow-x-auto">
       <div className="mb-4 flex justify-between items-center">
@@ -43,7 +44,7 @@ export default function RecentBorrowsTable({ transactions }: RecentBorrowsTableP
           Showing {transactions.length} transactions
         </span>
       </div>
-      
+
       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead className="bg-gray-50 dark:bg-gray-800">
           <tr>
@@ -97,11 +98,10 @@ export default function RecentBorrowsTable({ transactions }: RecentBorrowsTableP
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className={`text-sm font-medium ${
-                  transaction.status === 'Overdue' 
-                    ? 'text-red-600 dark:text-red-400' 
+                <div className={`text-sm font-medium ${transaction.status.toLowerCase() === 'overdue'
+                    ? 'text-red-600 dark:text-red-400'
                     : 'text-gray-900 dark:text-white'
-                }`}>
+                  }`}>
                   {transaction.dueDate}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -109,10 +109,11 @@ export default function RecentBorrowsTable({ transactions }: RecentBorrowsTableP
                     const due = new Date(transaction.dueDate);
                     const today = new Date();
                     const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 3600 * 24));
-                    
-                    if (transaction.status === 'Overdue') {
+
+                    const status = transaction.status.toLowerCase();
+                    if (status === 'overdue') {
                       return `${Math.abs(diffDays)} days overdue`;
-                    } else if (transaction.status === 'Active') {
+                    } else if (status === 'active' || status === 'borrowed') {
                       return diffDays > 0 ? `${diffDays} days left` : 'Due today';
                     }
                     return 'Completed';
@@ -121,15 +122,15 @@ export default function RecentBorrowsTable({ transactions }: RecentBorrowsTableP
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
-                  {transaction.status === 'Active' && '🔄'}
-                  {transaction.status === 'Returned' && '✅'}
-                  {transaction.status === 'Overdue' && '⚠️'}
-                  {transaction.status === 'Renewed' && '↩️'}
+                  {(transaction.status.toLowerCase() === 'active' || transaction.status.toLowerCase() === 'borrowed') && '🔄'}
+                  {transaction.status.toLowerCase() === 'returned' && '✅'}
+                  {transaction.status.toLowerCase() === 'overdue' && '⚠️'}
+                  {transaction.status.toLowerCase() === 'renewed' && '↩️'}
                   <span className="ml-1">{transaction.status}</span>
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                {transaction.status === 'Active' && (
+                {(transaction.status.toLowerCase() === 'active' || transaction.status.toLowerCase() === 'borrowed') && (
                   <div className="flex space-x-2">
                     <button className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-md text-sm transition-colors">
                       Renew
@@ -159,7 +160,7 @@ export default function RecentBorrowsTable({ transactions }: RecentBorrowsTableP
           ))}
         </tbody>
       </table>
-      
+
       {/* Pagination/Footer */}
       <div className="bg-gray-50 dark:bg-gray-800 px-6 py-3 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">

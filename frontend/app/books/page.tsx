@@ -50,13 +50,13 @@ export default function BooksPage() {
         publisher: book.publisher || 'N/A',
         totalCopies: book.total_copies,
         availableCopies: book.available_copies,
-        status: book.available_copies > 0 ? 'available' : 'unavailable',
-        rating: 4.5, // Default for UI
-        borrowCount: Math.floor(Math.random() * 200), // Mocked as not in backend
+        status: (book.available_copies > 0) ? 'available' : 'unavailable',
+        rating: 4.5, // Placeholder as backend doesn't track ratings yet
+        borrowCount: book.borrow_count || 0, // Ensure this field exists or default to 0
         description: book.description || 'No description available.',
-        language: 'English',
-        pages: 300,
-        location: 'Section A',
+        language: 'English', // Default
+        pages: 300, // Default/Placeholder
+        location: 'Section A', // Default/Placeholder
         coverColor: `hsl(${Math.abs(book.title.length * 40) % 360}, 70%, 60%)`, // Deterministic color
       }));
 
@@ -522,7 +522,7 @@ export default function BooksPage() {
   };
 
   // Handle bulk actions
-  const handleBulkAction = (action: string) => {
+  const handleBulkAction = async (action: string) => {
     if (selectedBooks.length === 0) {
       alert('Please select books first');
       return;
@@ -536,11 +536,32 @@ export default function BooksPage() {
         alert(`Printing labels for ${selectedBooks.length} books...`);
         break;
       case 'delete':
-        if (confirm(`Delete ${selectedBooks.length} selected books?`)) {
-          alert('Books deleted (simulated)');
-          setSelectedBooks([]);
+        if (confirm(`Delete ${selectedBooks.length} selected books? This cannot be undone.`)) {
+          try {
+            // Delete one by one for now as backend doesn't support bulk delete
+            for (const id of selectedBooks) {
+              await bookAPI.deleteBook(id);
+            }
+            alert('Books deleted successfully');
+            setSelectedBooks([]);
+            fetchBooks(); // Refresh list
+          } catch (err: any) {
+            alert(`Failed to delete books: ${err.message}`);
+          }
         }
         break;
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Are you sure you want to delete this book?')) {
+      try {
+        await bookAPI.deleteBook(id);
+        // Optimistic update or refresh
+        setBooks(prev => prev.filter(b => b.id !== id));
+      } catch (err: any) {
+        alert(`Error deleting book: ${err.message}`);
+      }
     }
   };
 
@@ -1095,22 +1116,25 @@ export default function BooksPage() {
 
                   {/* Action Buttons */}
                   <div style={styles.actionButtons}>
-                    <button style={styles.smallButton}>
+                    <Link href={`/books/${book.id}`} style={{ ...styles.smallButton, textDecoration: 'none' }}>
                       👁️ View
-                    </button>
-                    <button style={{
+                    </Link>
+                    <Link href={`/books/edit/${book.id}`} style={{
                       ...styles.smallButton,
+                      textDecoration: 'none',
                       borderColor: colors.primary,
                       color: colors.primary,
                     }}>
                       ✏️ Edit
-                    </button>
-                    <button style={{
-                      ...styles.smallButton,
-                      borderColor: book.status === 'available' ? colors.secondary : colors.warning,
-                      color: book.status === 'available' ? colors.secondary : colors.warning,
-                    }}>
-                      {book.status === 'available' ? '📖 Borrow' : '🔔 Notify'}
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(book.id)}
+                      style={{
+                        ...styles.smallButton,
+                        borderColor: colors.danger,
+                        color: colors.danger,
+                      }}>
+                      🗑️ Delete
                     </button>
                   </div>
                 </div>
@@ -1211,30 +1235,34 @@ export default function BooksPage() {
                     </td>
                     <td style={styles.td}>
                       <div style={{ display: 'flex', gap: '8px' }}>
-                        <button style={{
+                        <Link href={`/books/${book.id}`} style={{
                           ...styles.smallButton,
                           padding: '6px 12px',
                           fontSize: '12px',
+                          textDecoration: 'none'
                         }}>
                           👁️
-                        </button>
-                        <button style={{
+                        </Link>
+                        <Link href={`/books/edit/${book.id}`} style={{
                           ...styles.smallButton,
                           padding: '6px 12px',
                           fontSize: '12px',
                           borderColor: colors.primary,
                           color: colors.primary,
+                          textDecoration: 'none'
                         }}>
                           ✏️
-                        </button>
-                        <button style={{
-                          ...styles.smallButton,
-                          padding: '6px 12px',
-                          fontSize: '12px',
-                          borderColor: colors.secondary,
-                          color: colors.secondary,
-                        }}>
-                          📖
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(book.id)}
+                          style={{
+                            ...styles.smallButton,
+                            padding: '6px 12px',
+                            fontSize: '12px',
+                            borderColor: colors.danger,
+                            color: colors.danger,
+                          }}>
+                          🗑️
                         </button>
                       </div>
                     </td>

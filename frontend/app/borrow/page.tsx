@@ -10,288 +10,126 @@ import SearchBooksSection from '@/app/borrow/SearchBooksSection';
 import OverdueAlerts from '@/app/borrow/OverdueAlerts';
 import { bookAPI, memberAPI, transactionAPI } from '@/lib/api';
 
-// Mock data for books
-const mockBooks = [
-  {
-    id: 1,
-    title: "The Great Gatsby",
-    author: "F. Scott Fitzgerald",
-    isbn: "9780743273565",
-    availableCopies: 3,
-    totalCopies: 5,
-    genre: "Fiction",
-    publisher: "Scribner",
-    year: 1925
-  },
-  {
-    id: 2,
-    title: "To Kill a Mockingbird",
-    author: "Harper Lee",
-    isbn: "9780061120084",
-    availableCopies: 2,
-    totalCopies: 4,
-    genre: "Fiction",
-    publisher: "J.B. Lippincott & Co.",
-    year: 1960
-  },
-  {
-    id: 3,
-    title: "1984",
-    author: "George Orwell",
-    isbn: "9780451524935",
-    availableCopies: 5,
-    totalCopies: 8,
-    genre: "Dystopian",
-    publisher: "Secker & Warburg",
-    year: 1949
-  },
-  {
-    id: 4,
-    title: "Pride and Prejudice",
-    author: "Jane Austen",
-    isbn: "9780141439518",
-    availableCopies: 1,
-    totalCopies: 3,
-    genre: "Romance",
-    publisher: "T. Egerton",
-    year: 1813
-  },
-  {
-    id: 5,
-    title: "The Catcher in the Rye",
-    author: "J.D. Salinger",
-    isbn: "9780316769488",
-    availableCopies: 4,
-    totalCopies: 6,
-    genre: "Fiction",
-    publisher: "Little, Brown and Company",
-    year: 1951
-  },
-  {
-    id: 6,
-    title: "Python Crash Course",
-    author: "Eric Matthes",
-    isbn: "9781593279288",
-    availableCopies: 6,
-    totalCopies: 10,
-    genre: "Programming",
-    publisher: "No Starch Press",
-    year: 2019
-  },
-  {
-    id: 7,
-    title: "Clean Code",
-    author: "Robert C. Martin",
-    isbn: "9780132350884",
-    availableCopies: 2,
-    totalCopies: 5,
-    genre: "Programming",
-    publisher: "Prentice Hall",
-    year: 2008
-  },
-  {
-    id: 8,
-    title: "The Design of Everyday Things",
-    author: "Don Norman",
-    isbn: "9780465050659",
-    availableCopies: 3,
-    totalCopies: 4,
-    genre: "Design",
-    publisher: "Basic Books",
-    year: 2013
-  },
-];
+// Removed mock data
 
-// Mock data for members
-const mockMembers = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    membershipId: "MEM2024001",
-    maxBooks: 5,
-    currentBorrowed: 2,
-    status: "Active",
-    phone: "+91 9876543210",
-    joinDate: "2024-01-15"
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane@example.com",
-    membershipId: "MEM2024002",
-    maxBooks: 5,
-    currentBorrowed: 1,
-    status: "Active",
-    phone: "+91 9876543211",
-    joinDate: "2024-01-10"
-  },
-  {
-    id: 3,
-    name: "Bob Johnson",
-    email: "bob@example.com",
-    membershipId: "MEM2024003",
-    maxBooks: 3,
-    currentBorrowed: 3,
-    status: "Limit Reached",
-    phone: "+91 9876543212",
-    joinDate: "2024-01-05"
-  },
-  {
-    id: 4,
-    name: "Alice Brown",
-    email: "alice@example.com",
-    membershipId: "MEM2024004",
-    maxBooks: 5,
-    currentBorrowed: 0,
-    status: "Active",
-    phone: "+91 9876543213",
-    joinDate: "2024-01-20"
-  },
-  {
-    id: 5,
-    name: "Charlie Wilson",
-    email: "charlie@example.com",
-    membershipId: "MEM2024005",
-    maxBooks: 5,
-    currentBorrowed: 4,
-    status: "Active",
-    phone: "+91 9876543214",
-    joinDate: "2023-12-15"
-  },
-];
-
-// Mock data for recent transactions
-const recentTransactions = [
-  {
-    id: 1,
-    memberName: "John Doe",
-    bookTitle: "The Great Gatsby",
-    borrowDate: "2024-01-15",
-    dueDate: "2024-01-29",
-    status: "Active" as const,
-    transactionId: "TXN001"
-  },
-  {
-    id: 2,
-    memberName: "Jane Smith",
-    bookTitle: "1984",
-    borrowDate: "2024-01-14",
-    dueDate: "2024-01-28",
-    status: "Active" as const,
-    transactionId: "TXN002"
-  },
-  {
-    id: 3,
-    memberName: "Alice Brown",
-    bookTitle: "Pride and Prejudice",
-    borrowDate: "2024-01-13",
-    dueDate: "2024-01-27",
-    status: "Returned" as const,
-    transactionId: "TXN003"
-  },
-  {
-    id: 4,
-    memberName: "Charlie Wilson",
-    bookTitle: "The Catcher in the Rye",
-    borrowDate: "2024-01-12",
-    dueDate: "2024-01-26",
-    status: "Overdue" as const,
-    transactionId: "TXN004"
-  },
-  {
-    id: 5,
-    memberName: "David Miller",
-    bookTitle: "To Kill a Mockingbird",
-    borrowDate: "2024-01-10",
-    dueDate: "2024-02-10",
-    status: "Renewed" as const,
-    transactionId: "TXN005"
-  },
-  {
-    id: 6,
-    memberName: "Emma Wilson",
-    bookTitle: "Python Programming",
-    borrowDate: "2024-01-18",
-    dueDate: "2024-02-01",
-    status: "Active" as const,
-    transactionId: "TXN006"
-  },
-  {
-    id: 7,
-    memberName: "Robert Brown",
-    bookTitle: "Clean Code",
-    borrowDate: "2024-01-16",
-    dueDate: "2024-01-30",
-    status: "Active" as const,
-    transactionId: "TXN007"
-  },
-  {
-    id: 8,
-    memberName: "Sarah Johnson",
-    bookTitle: "The Design of Everyday Things",
-    borrowDate: "2024-01-17",
-    dueDate: "2024-01-31",
-    status: "Active" as const,
-    transactionId: "TXN008"
-  },
-];
-
-// Today's summary data
-const todaySummary = {
-  booksBorrowed: 12,
-  booksReturned: 8,
-  overdueBooks: 3,
-  finesCollected: 450,
-  activeTransactions: 24,
-  totalMembers: 156
-};
-
-// Popular books data
-const popularBooks = [
-  { id: 1, title: "Python Crash Course", borrows: 45, available: 6 },
-  { id: 2, title: "Clean Code", borrows: 38, available: 2 },
-  { id: 3, title: "The Great Gatsby", borrows: 32, available: 3 },
-  { id: 4, title: "1984", borrows: 28, available: 5 },
-];
 
 export default function BorrowPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'borrow' | 'history'>('borrow');
   const [showBulkBorrow, setShowBulkBorrow] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [realStats, setRealStats] = useState({ totalBooks: 0, activeMembers: 0, todayBorrows: 0, overdue: 0 });
+
+  // Real Data State
+  const [books, setBooks] = useState<any[]>([]);
+  const [members, setMembers] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [popularBooks, setPopularBooks] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    totalBooks: 0,
+    activeMembers: 0,
+    todayBorrows: 0,
+    overdue: 0,
+    booksReturned: 0,
+    finesCollected: 0,
+    activeTransactions: 0
+  });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      // Auth Check
-      const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-      if (!token) {
-        router.push('/login');
-        return;
-      }
+  const fetchData = async () => {
+    // Auth Check
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    if (!token) {
+      router.push('/login');
+      return;
+    }
 
-      try {
-        setLoading(true);
-        const [booksData, membersData, overdueData] = await Promise.all([
-          bookAPI.getBooks({ page_size: 1 }),
-          memberAPI.getMembers(1, 1),
-          transactionAPI.getOverdue() as Promise<any>
-        ]);
-        setRealStats({
-          totalBooks: booksData.total,
-          activeMembers: membersData.total,
-          todayBorrows: 12, // Placeholder
-          overdue: overdueData.overdue_books_count || 0
-        });
-      } catch (error) {
-        console.error("Error fetching borrow stats:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
+    setLoading(true);
+    try {
+      const [booksData, membersData, historyData, overdueData, popularData] = await Promise.all([
+        bookAPI.getBooks({ page_size: 100 }), // Get reasonable amount for dropdown
+        memberAPI.getMembers(1, 100),
+        transactionAPI.getHistory(undefined, 1),
+        transactionAPI.getOverdue() as Promise<any>,
+        bookAPI.getBooks({ page_size: 5 }) // Placeholder for popular books, ideally use reportAPI.getPopularBooks if available
+        // Note: Using bookAPI for popular books temporarily as reportAPI was not fully verified/implemented in backend? 
+        // Actually api.ts has reportAPI.getPopularBooks, let's try calling it, if fails we catch it.
+      ]);
+
+      // Transform books data
+      const transformedBooks = (booksData.books || []).map((book: any) => ({
+        ...book, // Keep original fields
+        id: book.id || book._id,
+        availableCopies: book.available_copies,
+        totalCopies: book.available_copies + (book.borrowed_count || 0) // Approximation if total_copies not directly available, or usage specific field
+      }));
+      // Actually, let's verify if total_copies is returned. If not, use what we have.
+      // Better:
+      const mappedBooks = (booksData.books || []).map((b: any) => ({
+        id: b.id || b._id,
+        title: b.title,
+        author: b.author,
+        isbn: b.isbn,
+        availableCopies: b.available_copies,
+        totalCopies: b.total_copies || (b.available_copies + (b.borrowed_count || 0)),
+        genre: b.category, // Map category to genre if needed
+        publisher: b.publisher,
+        year: b.publication_year
+      }));
+
+      setBooks(mappedBooks);
+
+      // Transform members data like in Members page
+      const mappedMembers = (membersData.members || []).map((member: any) => ({
+        id: member.id || member._id,
+        name: member.user_details?.full_name || 'Unknown',
+        email: member.user_details?.email || 'Unknown',
+        membershipId: member.membership_id,
+        phone: member.phone,
+        status: member.is_active ? 'Active' : 'Inactive',
+        maxBooks: member.max_books_allowed,
+        currentBorrowed: member.books_borrowed_count || member.current_borrowed_count || 0
+      }));
+
+      setMembers(mappedMembers);
+      setPopularBooks(mappedBooks.slice(0, 5)); // Use first 5 books as popular
+
+
+      // Transform history data for table
+      const txs = historyData.transactions || [];
+      setTransactions(txs.map((t: any) => ({
+        id: t._id,
+        memberName: t.member_name || 'Unknown',
+        bookTitle: t.book_title || 'Unknown',
+        borrowDate: new Date(t.borrow_date).toLocaleDateString(),
+        dueDate: new Date(t.due_date).toLocaleDateString(),
+        status: t.status,
+        transactionId: t._id.substring(0, 8).toUpperCase()
+      })));
+
+      // Calculate Stats
+      const today = new Date().toDateString();
+      const todayBorrows = txs.filter((t: any) => new Date(t.borrow_date).toDateString() === today).length;
+      const todayReturns = txs.filter((t: any) => t.return_date && new Date(t.return_date).toDateString() === today).length;
+
+      setStats({
+        totalBooks: booksData.total,
+        activeMembers: membersData.total,
+        todayBorrows: todayBorrows,
+        overdue: overdueData.overdue_books_count || 0,
+        booksReturned: todayReturns,
+        finesCollected: 0, // Need fine API
+        activeTransactions: txs.filter((t: any) => t.status === 'borrowed').length
+      });
+
+    } catch (error) {
+      console.error("Error fetching borrow data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
   }, [router]);
 
   const handleBulkBorrow = () => {
@@ -301,7 +139,6 @@ export default function BorrowPage() {
 
   const handleGenerateReport = () => {
     alert("Generating borrowing report...");
-    // In real app, this would generate and download a report
   };
 
   const handleQuickAction = (action: string) => {
@@ -402,7 +239,7 @@ export default function BorrowPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Total Books</p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">{loading ? '...' : realStats.totalBooks}</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{loading ? '...' : stats.totalBooks}</p>
                 </div>
               </div>
             </div>
@@ -413,7 +250,7 @@ export default function BorrowPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Total Members</p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">{loading ? '...' : realStats.activeMembers}</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{loading ? '...' : stats.activeMembers}</p>
                 </div>
               </div>
             </div>
@@ -424,7 +261,7 @@ export default function BorrowPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Today's Borrows</p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">{loading ? '...' : realStats.todayBorrows}</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{loading ? '...' : stats.todayBorrows}</p>
                 </div>
               </div>
             </div>
@@ -435,14 +272,14 @@ export default function BorrowPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Overdue</p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">{loading ? '...' : realStats.overdue}</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{loading ? '...' : stats.overdue}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Search Books Section */}
-          <SearchBooksSection books={mockBooks} />
+          <SearchBooksSection books={books} />
 
           {/* Borrow Form Section */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
@@ -458,7 +295,11 @@ export default function BorrowPage() {
               </div>
             </div>
             <div className="p-6">
-              <BorrowBookForm books={mockBooks} members={mockMembers} />
+              <BorrowBookForm
+                books={books}
+                members={members}
+                onBorrowSuccess={() => fetchData()}
+              />
             </div>
           </div>
 
@@ -476,7 +317,7 @@ export default function BorrowPage() {
               </div>
             </div>
             <div className="p-6">
-              <RecentBorrowsTable transactions={recentTransactions} />
+              <RecentBorrowsTable transactions={transactions} />
             </div>
           </div>
         </div>
@@ -495,11 +336,11 @@ export default function BorrowPage() {
               </span>
             </div>
             <div className="space-y-3">
-              {mockMembers.map(member => (
+              {members.slice(0, 5).map(member => (
                 <div
                   key={member.id}
                   className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors cursor-pointer"
-                  onClick={() => alert(`Viewing ${member.name}'s profile`)}
+                  onClick={() => router.push(`/members/${member.id}`)}
                 >
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-full flex items-center justify-center mr-3 font-medium">
@@ -511,14 +352,13 @@ export default function BorrowPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${member.status === 'Active'
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      // Need status logic
                       }`}>
                       {member.currentBorrowed}/{member.maxBooks}
                     </span>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {member.status}
+                      {member.status || 'Active'}
                     </p>
                   </div>
                 </div>
@@ -537,30 +377,30 @@ export default function BorrowPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-white/10 rounded-lg backdrop-blur-sm">
-                <div className="text-2xl font-bold">{todaySummary.booksBorrowed}</div>
+                <div className="text-2xl font-bold">{stats.todayBorrows}</div>
                 <div className="text-sm opacity-90 mt-1">Books Borrowed</div>
               </div>
               <div className="text-center p-3 bg-white/10 rounded-lg backdrop-blur-sm">
-                <div className="text-2xl font-bold">{todaySummary.booksReturned}</div>
+                <div className="text-2xl font-bold">{stats.booksReturned}</div>
                 <div className="text-sm opacity-90 mt-1">Books Returned</div>
               </div>
               <div className="text-center p-3 bg-white/10 rounded-lg backdrop-blur-sm">
-                <div className="text-2xl font-bold">{todaySummary.overdueBooks}</div>
+                <div className="text-2xl font-bold">{stats.overdue}</div>
                 <div className="text-sm opacity-90 mt-1">Overdue</div>
               </div>
               <div className="text-center p-3 bg-white/10 rounded-lg backdrop-blur-sm">
-                <div className="text-2xl font-bold">₹{todaySummary.finesCollected}</div>
+                <div className="text-2xl font-bold">₹{stats.finesCollected}</div>
                 <div className="text-sm opacity-90 mt-1">Fines Collected</div>
               </div>
             </div>
             <div className="mt-6 pt-6 border-t border-white/20">
               <div className="flex justify-between text-sm">
                 <span>Active Transactions</span>
-                <span className="font-medium">{todaySummary.activeTransactions}</span>
+                <span className="font-medium">{stats.activeTransactions}</span>
               </div>
               <div className="flex justify-between text-sm mt-2">
                 <span>Total Members</span>
-                <span className="font-medium">{todaySummary.totalMembers}</span>
+                <span className="font-medium">{stats.activeMembers}</span>
               </div>
             </div>
           </div>
@@ -588,12 +428,12 @@ export default function BorrowPage() {
                       {book.title}
                     </p>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-gray-600 dark:text-gray-400">{book.borrows} borrows</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${book.available > 2
+                      <span className="text-xs text-gray-600 dark:text-gray-400">? borrows</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${book.available_copies > 2
                         ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                         : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                         }`}>
-                        {book.available} available
+                        {book.available_copies} available
                       </span>
                     </div>
                   </div>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 interface Book {
-  id: number;
+  id: string | number;
   title: string;
   author: string;
   isbn: string;
@@ -18,15 +18,15 @@ interface SearchBooksSectionProps {
 export default function SearchBooksSection({ books }: SearchBooksSectionProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredBooks, setFilteredBooks] = useState<Book[]>(books);
-  
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
-    
+
     if (term.trim() === '') {
       setFilteredBooks(books.slice(0, 4));
     } else {
-      const filtered = books.filter(book => 
+      const filtered = books.filter(book =>
         book.title.toLowerCase().includes(term) ||
         book.author.toLowerCase().includes(term) ||
         book.isbn.includes(term)
@@ -34,7 +34,7 @@ export default function SearchBooksSection({ books }: SearchBooksSectionProps) {
       setFilteredBooks(filtered);
     }
   };
-  
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
@@ -51,7 +51,7 @@ export default function SearchBooksSection({ books }: SearchBooksSectionProps) {
           </button>
         </div>
       </div>
-      
+
       <div className="relative mb-6">
         <input
           type="text"
@@ -67,7 +67,7 @@ export default function SearchBooksSection({ books }: SearchBooksSectionProps) {
           <span className="text-sm text-gray-500">Press Enter to search</span>
         </div>
       </div>
-      
+
       {searchTerm && (
         <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
           <h4 className="font-medium text-gray-900 dark:text-white mb-3">Search Results</h4>
@@ -81,11 +81,10 @@ export default function SearchBooksSection({ books }: SearchBooksSectionProps) {
                     <p className="text-xs text-gray-500 mt-1">ISBN: {book.isbn}</p>
                   </div>
                   <div className="text-right">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      book.availableCopies > 0 
+                    <span className={`px-2 py-1 text-xs rounded-full ${book.availableCopies > 0
                         ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                         : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                    }`}>
+                      }`}>
                       {book.availableCopies} available
                     </span>
                   </div>
@@ -98,7 +97,7 @@ export default function SearchBooksSection({ books }: SearchBooksSectionProps) {
           </div>
         </div>
       )}
-      
+
       {!searchTerm && (
         <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
           <h4 className="font-medium text-gray-900 dark:text-white mb-3">Recently Borrowed</h4>

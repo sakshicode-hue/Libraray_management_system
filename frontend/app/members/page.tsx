@@ -56,161 +56,78 @@ export default function MembersPage() {
     inactive: '#dc2626',
   };
 
-  // Mock member data
-  const mockMembers = [
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      phone: '+91 9876543210',
-      membershipId: 'MEM2024001',
-      joinDate: '2024-01-15',
-      status: 'Active',
-      membershipPlan: 'Premium',
-      borrowedBooks: 2,
-      maxBooks: 5,
-      totalBorrowed: 15,
-      fineDue: 0,
-      lastActivity: 'Today',
-      avatarColor: '#3b82f6',
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      email: 'jane.smith@example.com',
-      phone: '+91 9876543211',
-      membershipId: 'MEM2024002',
-      joinDate: '2024-01-10',
-      status: 'Active',
-      membershipPlan: 'Standard',
-      borrowedBooks: 1,
-      maxBooks: 3,
-      totalBorrowed: 8,
-      fineDue: 50,
-      lastActivity: '2 days ago',
-      avatarColor: '#ec4899',
-    },
-    {
-      id: 3,
-      name: 'Bob Johnson',
-      email: 'bob.johnson@example.com',
-      phone: '+91 9876543212',
-      membershipId: 'MEM2024003',
-      joinDate: '2024-01-05',
-      status: 'Inactive',
-      membershipPlan: 'Basic',
-      borrowedBooks: 0,
-      maxBooks: 2,
-      totalBorrowed: 5,
-      fineDue: 0,
-      lastActivity: '2 weeks ago',
-      avatarColor: '#10b981',
-    },
-    {
-      id: 4,
-      name: 'Alice Brown',
-      email: 'alice.brown@example.com',
-      phone: '+91 9876543213',
-      membershipId: 'MEM2024004',
-      joinDate: '2024-01-20',
-      status: 'Active',
-      membershipPlan: 'Premium',
-      borrowedBooks: 3,
-      maxBooks: 5,
-      totalBorrowed: 12,
-      fineDue: 100,
-      lastActivity: 'Today',
-      avatarColor: '#f59e0b',
-    },
-    {
-      id: 5,
-      name: 'Charlie Wilson',
-      email: 'charlie.wilson@example.com',
-      phone: '+91 9876543214',
-      membershipId: 'MEM2024005',
-      joinDate: '2023-12-15',
-      status: 'Active',
-      membershipPlan: 'Standard',
-      borrowedBooks: 4,
-      maxBooks: 5,
-      totalBorrowed: 25,
-      fineDue: 0,
-      lastActivity: 'Yesterday',
-      avatarColor: '#8b5cf6',
-    },
-    {
-      id: 6,
-      name: 'David Miller',
-      email: 'david.miller@example.com',
-      phone: '+91 9876543215',
-      membershipId: 'MEM2024006',
-      joinDate: '2024-01-18',
-      status: 'Suspended',
-      membershipPlan: 'Basic',
-      borrowedBooks: 0,
-      maxBooks: 2,
-      totalBorrowed: 3,
-      fineDue: 150,
-      lastActivity: '1 week ago',
-      avatarColor: '#ef4444',
-    },
-    {
-      id: 7,
-      name: 'Emma Wilson',
-      email: 'emma.wilson@example.com',
-      phone: '+91 9876543216',
-      membershipId: 'MEM2024007',
-      joinDate: '2024-01-12',
-      status: 'Active',
-      membershipPlan: 'Premium',
-      borrowedBooks: 2,
-      maxBooks: 5,
-      totalBorrowed: 18,
-      fineDue: 25,
-      lastActivity: 'Today',
-      avatarColor: '#14b8a6',
-    },
-    {
-      id: 8,
-      name: 'Frank Harris',
-      email: 'frank.harris@example.com',
-      phone: '+91 9876543217',
-      membershipId: 'MEM2024008',
-      joinDate: '2024-01-08',
-      status: 'Active',
-      membershipPlan: 'Standard',
-      borrowedBooks: 1,
-      maxBooks: 3,
-      totalBorrowed: 7,
-      fineDue: 0,
-      lastActivity: '3 days ago',
-      avatarColor: '#6366f1',
-    },
-  ];
+  const [members, setMembers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Filter members
-  const filteredMembers = mockMembers.filter(member => {
-    const matchesSearch = 
-      member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.membershipId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.phone.includes(searchQuery);
-    
+  // Fetch members from API
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        setLoading(true);
+        // Importing API dynamically or expecting it from props would be better, but assuming 'api' export
+        // We need to import memberAPI. Let's add the import at the top first if not present.
+        // Assuming api is available via imports. 
+        const { memberAPI } = require('@/lib/api'); // Using require to avoid top-level import conflict if any
+
+        const data = await memberAPI.getMembers(1, 100); // Fetch first 100
+
+        // Transform backend data to frontend structure
+        const transformedMembers = data.members.map((m: any) => ({
+          id: m.id,
+          name: m.user_details?.full_name || 'Unknown',
+          email: m.user_details?.email || 'No Email',
+          phone: m.phone || 'N/A',
+          membershipId: m.membership_id || 'N/A',
+          joinDate: m.membership_start ? new Date(m.membership_start).toISOString().split('T')[0] : 'N/A',
+          status: m.is_active ? 'Active' : 'Inactive',
+          membershipPlan: m.membership_type ? m.membership_type.charAt(0).toUpperCase() + m.membership_type.slice(1) : 'Standard',
+          borrowedBooks: 0, // Placeholder
+          maxBooks: m.max_books_allowed || 5,
+          totalBorrowed: 0, // Placeholder
+          fineDue: 0, // Placeholder
+          lastActivity: 'Recent', // Placeholder
+          avatarColor: colors.primary, // Default color
+        }));
+
+        setMembers(transformedMembers);
+      } catch (err: any) {
+        console.error('Failed to load members:', err);
+        setError('Failed to load members. Please try again.');
+        // Fallback or empty state
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMembers();
+  }, [colors.primary]);
+
+  // Use members state instead of mockMembers
+  const filteredMembers = members.filter(member => {
+    const matchesSearch =
+      (member.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (member.email?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (member.membershipId?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (member.phone || '').includes(searchQuery);
+
     const matchesStatus = selectedStatus === 'All' || member.status === selectedStatus;
     const matchesPlan = selectedPlan === 'All' || member.membershipPlan === selectedPlan;
-    
+
     return matchesSearch && matchesStatus && matchesPlan;
   });
 
-  // Get unique statuses and plans
-  const statuses = ['All', ...new Set(mockMembers.map(member => member.status))];
-  const plans = ['All', ...new Set(mockMembers.map(member => member.membershipPlan))];
+  // Get unique statuses and plans from REAL data
+  const statuses = ['All', ...new Set(members.map(member => member.status))];
+  const plans = ['All', ...new Set(members.map(member => member.membershipPlan))];
 
-  // Calculate stats
-  const totalMembers = mockMembers.length;
-  const activeMembers = mockMembers.filter(m => m.status === 'Active').length;
-  const totalBorrowed = mockMembers.reduce((sum, member) => sum + member.totalBorrowed, 0);
-  const totalFines = mockMembers.reduce((sum, member) => sum + member.fineDue, 0);
+  // Calculate stats based on REAL data
+  const totalMembers = members.length;
+  const activeMembers = members.filter(m => m.status === 'Active').length;
+  // These will be 0 for now until backend provides stats
+  const totalBorrowed = members.reduce((sum, member) => sum + member.totalBorrowed, 0);
+  const totalFines = members.reduce((sum, member) => sum + member.fineDue, 0);
+
 
   // Styles
   const styles = {
@@ -402,7 +319,7 @@ export default function MembersPage() {
     },
     memberHeader: {
       padding: '24px',
-      position: 'relative',
+      position: 'relative' as const,
     },
     memberAvatar: {
       width: '80px',
@@ -542,8 +459,8 @@ export default function MembersPage() {
 
   // Toggle member selection
   const toggleMemberSelection = (id: number) => {
-    setSelectedMembers(prev => 
-      prev.includes(id) 
+    setSelectedMembers(prev =>
+      prev.includes(id)
         ? prev.filter(memberId => memberId !== id)
         : [...prev, id]
     );
@@ -565,8 +482,8 @@ export default function MembersPage() {
       alert('Please select members first');
       return;
     }
-    
-    switch(action) {
+
+    switch (action) {
       case 'export':
         alert(`Exporting ${selectedMembers.length} members...`);
         break;
@@ -592,7 +509,7 @@ export default function MembersPage() {
 
   // Get status badge style
   const getStatusBadge = (status: string) => {
-    switch(status) {
+    switch (status) {
       case 'Active': return styles.activeBadge;
       case 'Inactive': return styles.inactiveBadge;
       case 'Suspended': return styles.suspendedBadge;
@@ -602,7 +519,7 @@ export default function MembersPage() {
 
   // Get membership plan color
   const getPlanColor = (plan: string) => {
-    switch(plan) {
+    switch (plan) {
       case 'Premium': return colors.purple;
       case 'Standard': return colors.primary;
       case 'Basic': return colors.teal;
@@ -618,10 +535,10 @@ export default function MembersPage() {
           <h1 style={styles.title}>👥 Member Management</h1>
           <p style={styles.subtitle}>
             Manage library members, track activity, and handle memberships
-            <span style={{ 
-              marginLeft: '12px', 
-              fontSize: '14px', 
-              padding: '4px 12px', 
+            <span style={{
+              marginLeft: '12px',
+              fontSize: '14px',
+              padding: '4px 12px',
               background: `linear-gradient(135deg, ${colors.primary}20, ${colors.purple}20)`,
               borderRadius: '20px',
               border: `1px solid ${colors.primary}40`
@@ -631,7 +548,7 @@ export default function MembersPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <button 
+          <button
             onClick={() => setDarkMode(!darkMode)}
             style={{
               ...styles.outlineButton,
@@ -641,7 +558,7 @@ export default function MembersPage() {
           >
             {darkMode ? '☀️ Light' : '🌙 Dark'}
           </button>
-          <Link 
+          <Link
             href="/members/add"
             style={styles.button}
           >
@@ -654,7 +571,7 @@ export default function MembersPage() {
       <div style={styles.statsContainer}>
         <div style={styles.statCard}>
           <p style={styles.statTitle}>📊 Total Members</p>
-          <p style={{ 
+          <p style={{
             ...styles.statValue,
             background: `linear-gradient(135deg, ${colors.primary}, ${colors.purple})`,
             WebkitBackgroundClip: 'text',
@@ -662,8 +579,8 @@ export default function MembersPage() {
           }}>
             {totalMembers}
           </p>
-          <div style={{ 
-            fontSize: '13px', 
+          <div style={{
+            fontSize: '13px',
             color: colors.textSecondary,
             display: 'flex',
             alignItems: 'center',
@@ -675,7 +592,7 @@ export default function MembersPage() {
         </div>
         <div style={styles.statCard}>
           <p style={styles.statTitle}>✅ Active Members</p>
-          <p style={{ 
+          <p style={{
             ...styles.statValue,
             background: `linear-gradient(135deg, ${colors.active}, ${colors.secondary})`,
             WebkitBackgroundClip: 'text',
@@ -683,8 +600,8 @@ export default function MembersPage() {
           }}>
             {activeMembers}
           </p>
-          <div style={{ 
-            fontSize: '13px', 
+          <div style={{
+            fontSize: '13px',
             color: colors.textSecondary,
             display: 'flex',
             alignItems: 'center',
@@ -696,7 +613,7 @@ export default function MembersPage() {
         </div>
         <div style={styles.statCard}>
           <p style={styles.statTitle}>📚 Total Books Borrowed</p>
-          <p style={{ 
+          <p style={{
             ...styles.statValue,
             background: `linear-gradient(135deg, ${colors.teal}, ${colors.secondary})`,
             WebkitBackgroundClip: 'text',
@@ -704,8 +621,8 @@ export default function MembersPage() {
           }}>
             {totalBorrowed}
           </p>
-          <div style={{ 
-            fontSize: '13px', 
+          <div style={{
+            fontSize: '13px',
             color: colors.textSecondary,
             display: 'flex',
             alignItems: 'center',
@@ -717,7 +634,7 @@ export default function MembersPage() {
         </div>
         <div style={styles.statCard}>
           <p style={styles.statTitle}>💰 Total Fines Due</p>
-          <p style={{ 
+          <p style={{
             ...styles.statValue,
             background: `linear-gradient(135deg, ${colors.warning}, ${colors.danger})`,
             WebkitBackgroundClip: 'text',
@@ -725,15 +642,15 @@ export default function MembersPage() {
           }}>
             ₹{totalFines}
           </p>
-          <div style={{ 
-            fontSize: '13px', 
+          <div style={{
+            fontSize: '13px',
             color: colors.textSecondary,
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
             marginTop: '8px'
           }}>
-            <span>From {mockMembers.filter(m => m.fineDue > 0).length} members</span>
+            <span>From {members.filter(m => m.fineDue > 0).length} members</span>
           </div>
         </div>
       </div>
@@ -742,9 +659,9 @@ export default function MembersPage() {
       {selectedMembers.length > 0 && (
         <div style={styles.bulkActions}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ 
-              width: '40px', 
-              height: '40px', 
+            <div style={{
+              width: '40px',
+              height: '40px',
               borderRadius: '50%',
               background: `linear-gradient(135deg, ${colors.primary}, ${colors.purple})`,
               display: 'flex',
@@ -765,19 +682,19 @@ export default function MembersPage() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <button 
+            <button
               onClick={() => handleBulkAction('export')}
               style={styles.secondaryButton}
             >
               📥 Export Selected
             </button>
-            <button 
+            <button
               onClick={() => handleBulkAction('message')}
               style={styles.button}
             >
               💬 Send Message
             </button>
-            <button 
+            <button
               onClick={() => handleBulkAction('activate')}
               style={{
                 ...styles.button,
@@ -786,13 +703,13 @@ export default function MembersPage() {
             >
               ✅ Activate
             </button>
-            <button 
+            <button
               onClick={() => handleBulkAction('deactivate')}
               style={styles.dangerButton}
             >
               ⚠️ Deactivate
             </button>
-            <button 
+            <button
               onClick={() => setSelectedMembers([])}
               style={styles.outlineButton}
             >
@@ -808,7 +725,7 @@ export default function MembersPage() {
           <h2 style={styles.sectionTitle}>
             🔍 Search & Filter Members
           </h2>
-          <button 
+          <button
             onClick={() => setShowFilters(!showFilters)}
             style={styles.outlineButton}
           >
@@ -825,14 +742,14 @@ export default function MembersPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             style={styles.searchInput}
           />
-          <button 
+          <button
             onClick={resetFilters}
             style={styles.outlineButton}
           >
             🔄 Reset Filters
           </button>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button 
+            <button
               onClick={() => setViewMode('grid')}
               style={{
                 ...styles.filterButton,
@@ -841,7 +758,7 @@ export default function MembersPage() {
             >
               📱 Grid
             </button>
-            <button 
+            <button
               onClick={() => setViewMode('list')}
               style={{
                 ...styles.filterButton,
@@ -855,8 +772,8 @@ export default function MembersPage() {
 
         {/* Filters */}
         {showFilters && (
-          <div style={{ 
-            padding: '24px', 
+          <div style={{
+            padding: '24px',
             backgroundColor: darkMode ? '#374151' : '#f9fafb',
             borderRadius: '12px',
             marginTop: '16px',
@@ -912,10 +829,10 @@ export default function MembersPage() {
         )}
 
         {/* Results Info */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           marginTop: '24px',
           paddingTop: '16px',
           borderTop: `1px solid ${colors.border}`
@@ -947,7 +864,7 @@ export default function MembersPage() {
             No members found
           </h3>
           <p style={{ marginBottom: '24px' }}>Try adjusting your search or filters</p>
-          <button 
+          <button
             onClick={resetFilters}
             style={styles.button}
           >
@@ -959,7 +876,7 @@ export default function MembersPage() {
         <div style={styles.gridContainer}>
           {filteredMembers.map(member => {
             const borrowedPercentage = (member.borrowedBooks / member.maxBooks) * 100;
-            
+
             return (
               <div key={member.id} style={styles.memberCard}>
                 {/* Member Header */}
@@ -976,16 +893,16 @@ export default function MembersPage() {
                       transform: 'scale(1.3)',
                     }}
                   />
-                  
+
                   {/* Avatar */}
                   <div style={{ ...styles.memberAvatar, background: `linear-gradient(135deg, ${member.avatarColor}, ${member.avatarColor}dd)` }}>
                     {member.name.charAt(0)}
                   </div>
-                  
+
                   {/* Name and ID */}
                   <h3 style={styles.memberName}>{member.name}</h3>
                   <p style={styles.memberId}>ID: {member.membershipId}</p>
-                  
+
                   {/* Status Badge */}
                   <span style={{ ...styles.badge, ...getStatusBadge(member.status) }}>
                     {member.status}
@@ -1031,8 +948,8 @@ export default function MembersPage() {
                     <div style={styles.progressBar}>
                       <div style={styles.progressFill(
                         borrowedPercentage,
-                        borrowedPercentage > 80 ? colors.danger : 
-                        borrowedPercentage > 50 ? colors.warning : colors.secondary
+                        borrowedPercentage > 80 ? colors.danger :
+                          borrowedPercentage > 50 ? colors.warning : colors.secondary
                       )} />
                     </div>
                     <div style={styles.detailRow}>
@@ -1043,23 +960,39 @@ export default function MembersPage() {
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
                   <div style={styles.actionButtons}>
-                    <button style={styles.smallButton}>
+                    <Link href={`/members/${member.id}`} style={{ ...styles.smallButton, textDecoration: 'none' }}>
                       👁️ View
-                    </button>
-                    <button style={{
+                    </Link>
+                    <Link href={`/members/edit/${member.id}`} style={{
                       ...styles.smallButton,
                       borderColor: colors.primary,
                       color: colors.primary,
+                      textDecoration: 'none',
                     }}>
                       ✏️ Edit
-                    </button>
-                    <button style={{
-                      ...styles.smallButton,
-                      borderColor: member.status === 'Active' ? colors.danger : colors.secondary,
-                      color: member.status === 'Active' ? colors.danger : colors.secondary,
-                    }}>
+                    </Link>
+                    <button
+                      onClick={async () => {
+                        if (confirm(`Are you sure you want to ${member.status === 'Active' ? 'deactivate' : 'activate'} this member?`)) {
+                          // Assuming toggleStatus API exists or using update logic
+                          // For now using memberAPI.updateMember
+                          const { memberAPI } = require('@/lib/api');
+                          try {
+                            await memberAPI.updateMember(member.id, { is_active: member.status !== 'Active' });
+                            // Refresh list - simplified by reloading page or fetching again
+                            // Ideally we should update state, but let's reload for now
+                            window.location.reload();
+                          } catch (e) {
+                            alert('Failed to update status');
+                          }
+                        }
+                      }}
+                      style={{
+                        ...styles.smallButton,
+                        borderColor: member.status === 'Active' ? colors.danger : colors.secondary,
+                        color: member.status === 'Active' ? colors.danger : colors.secondary,
+                      }}>
                       {member.status === 'Active' ? '⏸️ Deactivate' : '▶️ Activate'}
                     </button>
                   </div>
@@ -1095,8 +1028,8 @@ export default function MembersPage() {
               <tbody>
                 {filteredMembers.map(member => (
                   <tr key={member.id} style={{
-                    backgroundColor: selectedMembers.includes(member.id) 
-                      ? (darkMode ? '#1e3a8a20' : '#dbeafe') 
+                    backgroundColor: selectedMembers.includes(member.id)
+                      ? (darkMode ? '#1e3a8a20' : '#dbeafe')
                       : 'transparent',
                   }}>
                     <td style={styles.td}>
@@ -1108,9 +1041,9 @@ export default function MembersPage() {
                           style={{ transform: 'scale(1.1)' }}
                         />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div style={{ 
-                            width: '40px', 
-                            height: '40px', 
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
                             borderRadius: '50%',
                             background: `linear-gradient(135deg, ${member.avatarColor}, ${member.avatarColor}dd)`,
                             display: 'flex',
@@ -1142,9 +1075,9 @@ export default function MembersPage() {
                       </span>
                     </td>
                     <td style={styles.td}>
-                      <span style={{ 
-                        padding: '4px 12px', 
-                        borderRadius: '20px', 
+                      <span style={{
+                        padding: '4px 12px',
+                        borderRadius: '20px',
                         fontSize: '12px',
                         backgroundColor: `${getPlanColor(member.membershipPlan)}20`,
                         color: getPlanColor(member.membershipPlan),
@@ -1168,15 +1101,15 @@ export default function MembersPage() {
                     </td>
                     <td style={styles.td}>
                       {member.fineDue > 0 ? (
-                        <span style={{ 
-                          color: colors.danger, 
+                        <span style={{
+                          color: colors.danger,
                           fontWeight: 600,
                           fontSize: '13px'
                         }}>
                           ₹{member.fineDue}
                         </span>
                       ) : (
-                        <span style={{ 
+                        <span style={{
                           color: colors.textSecondary,
                           fontSize: '12px'
                         }}>
@@ -1186,30 +1119,44 @@ export default function MembersPage() {
                     </td>
                     <td style={styles.td}>
                       <div style={{ display: 'flex', gap: '8px' }}>
-                        <button style={{
+                        <Link href={`/members/${member.id}`} style={{
                           ...styles.smallButton,
                           padding: '6px 12px',
                           fontSize: '12px',
+                          textDecoration: 'none'
                         }}>
                           👁️
-                        </button>
-                        <button style={{
+                        </Link>
+                        <Link href={`/members/edit/${member.id}`} style={{
                           ...styles.smallButton,
                           padding: '6px 12px',
                           fontSize: '12px',
                           borderColor: colors.primary,
                           color: colors.primary,
+                          textDecoration: 'none'
                         }}>
                           ✏️
-                        </button>
-                        <button style={{
-                          ...styles.smallButton,
-                          padding: '6px 12px',
-                          fontSize: '12px',
-                          borderColor: colors.secondary,
-                          color: colors.secondary,
-                        }}>
-                          💬
+                        </Link>
+                        <button
+                          onClick={async () => {
+                            if (confirm(`Are you sure you want to ${member.status === 'Active' ? 'deactivate' : 'activate'} this member?`)) {
+                              const { memberAPI } = require('@/lib/api');
+                              try {
+                                await memberAPI.updateMember(member.id, { is_active: member.status !== 'Active' });
+                                window.location.reload();
+                              } catch (e) {
+                                alert('Failed to update status');
+                              }
+                            }
+                          }}
+                          style={{
+                            ...styles.smallButton,
+                            padding: '6px 12px',
+                            fontSize: '12px',
+                            borderColor: member.status === 'Active' ? colors.danger : colors.secondary,
+                            color: member.status === 'Active' ? colors.danger : colors.secondary,
+                          }}>
+                          {member.status === 'Active' ? '⏸️' : '▶️'}
                         </button>
                       </div>
                     </td>
@@ -1235,8 +1182,8 @@ export default function MembersPage() {
           👥 Member Management System • {activeMembers} active members • Last updated: Today
         </p>
         <p style={{ margin: 0 }}>
-          Need to import members in bulk? Use the <Link href="/import" style={{ 
-            color: colors.primary, 
+          Need to import members in bulk? Use the <Link href="/import" style={{
+            color: colors.primary,
             textDecoration: 'none',
             fontWeight: 500,
           }}>Import Tool</Link>

@@ -97,69 +97,94 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const isAdminOrLibrarian = user?.role === 'admin' || user?.role === 'librarian';
 
-      const [
-        booksData,
-        membersData,
-        overdueData,
-        popularData,
-        reportsData,
-      ] = await Promise.all([
-        bookAPI.getBooks({ page_size: 1 }),
-        memberAPI.getMembers(1, 1),
-        transactionAPI.getOverdue() as Promise<any>,
-        reportAPI.getPopularBooks(5),
-        reportAPI.getBorrowingReport(),
-      ]);
+      // Base promises that everyone can access
+      const promises: Promise<any>[] = [
+        bookAPI.getBooks({ page_size: 1 }), // Total books
+      ];
 
-      // Map stats
-      setStats([
-        { id: 1, title: "Total Books", value: booksData.total.toLocaleString(), icon: "📚", trend: { value: '8.2%', isPositive: true }, color: "blue" },
-        { id: 2, title: "Active Members", value: membersData.total.toLocaleString(), icon: "👥", trend: { value: '12.5%', isPositive: true }, color: "green" },
-        { id: 3, title: "Books Borrowed", value: reportsData.total_borrows?.toString() || "0", icon: "📖", trend: { value: '5.3%', isPositive: true }, color: "purple" },
-        { id: 4, title: "Overdue Books", value: overdueData.overdue_books_count?.toString() || "0", icon: "⏰", trend: { value: '2.1%', isPositive: false }, color: "red" },
-      ]);
+      // Add role-specific promises
+      if (isAdminOrLibrarian) {
+        promises.push(
+          memberAPI.getMembers(1, 1),
+          transactionAPI.getOverdue(),
+          reportAPI.getPopularBooks(5),
+          reportAPI.getBorrowingReport()
+        );
+      } else {
+        // Members see their own history/status
+        if (user.member_id) {
+          promises.push(
+            memberAPI.getBorrowingHistory(user.member_id),
+            transactionAPI.getHistory(user.member_id)
+          );
+        } else {
+          // Fallback if no member profile linked
+          promises.push(Promise.resolve({ transactions: [] }), Promise.resolve({ transactions: [] }));
+        }
+      }
 
-      setOverdueBooks(overdueData.overdue_books?.map((b: any) => ({
-        id: b.transaction_id,
-        title: b.book_title,
-        member: b.member_name,
-        dueDate: b.due_date,
-        daysOverdue: b.days_overdue,
-        fine: `₹${b.fine_amount}`
-      })) || []);
+      const results = await Promise.all(promises);
+      const booksData = results[0];
 
-      setPopularBooks(popularData.map((b: any) => ({
-        id: b.id,
-        title: b.title,
-        author: b.author,
-        borrows: b.borrow_count,
-        coverColor: "bg-blue-100",
-        textColor: "text-blue-600"
-      })));
+      if (isAdminOrLibrarian) {
+        const [, membersData, overdueData, popularData, reportsData] = results as [any, any, any, any, any];
 
-      // Mock activities as backend doesn't have a direct "recent activities" endpoint yet
-      setRecentActivities([
-        { id: 1, user: "System", action: "synchronized", book: "Database", time: "Just now", type: "system" },
-        { id: 2, user: "Admin", action: "logged in", time: "5 min ago", type: "login" }
-      ]);
+        setStats([
+          { id: 1, title: "Total Books", value: booksData.total.toLocaleString(), icon: "📚", trend: { value: '8.2%', isPositive: true }, color: "blue" },
+          { id: 2, title: "Active Members", value: membersData.total.toLocaleString(), icon: "👥", trend: { value: '12.5%', isPositive: true }, color: "green" },
+          { id: 3, title: "Books Borrowed", value: reportsData.total_borrows?.toString() || "0", icon: "📖", trend: { value: '5.3%', isPositive: true }, color: "purple" },
+          { id: 4, title: "Overdue Books", value: overdueData.overdue_books_count?.toString() || "0", icon: "⏰", trend: { value: '2.1%', isPositive: false }, color: "red" },
+        ]);
 
-      setAiInsights([
-        "Trending: Computer Science books",
-        "Recommendation: Increase sci-fi collection"
-      ]);
+        setOverdueBooks(overdueData.overdue_books?.map((b: any) => ({
+          id: b.transaction_id,
+          title: b.book_title,
+          member: b.member_name,
+          dueDate: b.due_date,
+          daysOverdue: b.days_overdue,
+          fine: `₹${b.fine_amount}`
+        })) || []);
 
+        setPopularBooks(popularData.map((b: any) => ({
+          id: b.id,
+          title: b.title,
+          author: b.author,
+          borrows: b.borrow_count,
+          coverColor: "bg-blue-100",
+          textColor: "text-blue-600"
+        })));
+      } else {
+        // Member Stats
+        const [, historyData, txData] = results as [any, any, any];
+        // Calculate member specific stats
+        const transactions = historyData.transactions || [];
+        const activeLoans = transactions.filter((h: any) => !h.return_date).length;
+        const totalBorrowed = transactions.length;
+
+        setStats([
+          { id: 1, title: "Total Books", value: booksData.total.toLocaleString(), icon: "📚", trend: { value: '', isPositive: true }, color: "blue" },
+          { id: 2, title: "My Active Loans", value: activeLoans.toString(), icon: "📖", trend: { value: '', isPositive: true }, color: "green" },
+          { id: 3, title: "Total Borrowed", value: totalBorrowed.toString(), icon: "📚", trend: { value: '', isPositive: true }, color: "purple" },
+        ]);
+
+        // Ensure no admin data leaks
+        setOverdueBooks([]);
+        setPopularBooks([]);
+      }
+
+      setRecentActivities([]); // Clear mock activities
+      setAiInsights([]); // Clear mock insights
       setError(null);
     } catch (err: any) {
       console.error("Dashboard fetch error:", err);
       if (err.message.includes("401") || err.message.includes("Not authenticated")) {
         router.push('/login');
       } else {
-        setError("Failed to load dashboard data. Showing simulation data.");
-        // Fallback to mock data on error so UI doesn't look broken
-        setStats(MOCK_STATS.slice(0, 4));
-        setOverdueBooks(MOCK_OVERDUE.slice(0, 3));
-        setPopularBooks(MOCK_POPULAR);
+        setError("Failed to load dashboard data.");
       }
     } finally {
       setLoading(false);

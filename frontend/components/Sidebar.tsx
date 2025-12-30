@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { authAPI } from '@/lib/api';
 
 interface NavItem {
   name: string;
@@ -41,39 +42,9 @@ const ReturnsIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
   </svg>
 );
 
-const TransactionsIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-  </svg>
-);
-
-const FinesIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
-
-const ReservationsIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-  </svg>
-);
-
 const EBooksIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-  </svg>
-);
-
-const SearchIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-  </svg>
-);
-
-const ReportsIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
   </svg>
 );
 
@@ -84,24 +55,36 @@ const SettingsIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
   </svg>
 );
 
+const LogoutIcon = ({ className = 'w-5 h-5' }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+  </svg>
+);
+
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: <DashboardIcon /> },
   { name: 'Books', href: '/books', icon: <BooksIcon /> },
   { name: 'Members', href: '/members', icon: <MembersIcon /> },
   { name: 'Borrow', href: '/borrow', icon: <BorrowIcon /> },
   { name: 'Returns', href: '/returns', icon: <ReturnsIcon /> },
-  { name: 'Transactions', href: '/transactions', icon: <TransactionsIcon /> },
-  { name: 'Fines', href: '/fines', icon: <FinesIcon /> },
-  { name: 'Reservations', href: '/reservations', icon: <ReservationsIcon /> },
   { name: 'E-Books', href: '/ebooks', icon: <EBooksIcon /> },
-  { name: 'Search', href: '/search', icon: <SearchIcon /> },
-  { name: 'Reports', href: '/reports', icon: <ReportsIcon /> },
   { name: 'Settings', href: '/settings', icon: <SettingsIcon /> },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await authAPI.logout();
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      router.push('/login');
+    }
+  };
 
   return (
     <>
@@ -152,8 +135,8 @@ export default function Sidebar() {
         <div className="h-full flex flex-col">
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200/80 dark:border-gray-800/80 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
-            <Link 
-              href="/dashboard" 
+            <Link
+              href="/dashboard"
               className="flex items-center space-x-3 group"
               onClick={() => setIsMobileOpen(false)}
             >
@@ -196,10 +179,9 @@ export default function Sidebar() {
                   onClick={() => setIsMobileOpen(false)}
                   className={`
                     group relative flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200
-                    ${
-                      isActive
-                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 dark:shadow-blue-500/20 font-medium'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white'
+                    ${isActive
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 dark:shadow-blue-500/20 font-medium'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white'
                     }
                   `}
                 >
@@ -207,7 +189,7 @@ export default function Sidebar() {
                   {isActive && (
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full shadow-sm" />
                   )}
-                  
+
                   {/* Icon */}
                   <span className={`
                     flex-shrink-0 transition-transform group-hover:scale-110
@@ -215,10 +197,10 @@ export default function Sidebar() {
                   `}>
                     {item.icon}
                   </span>
-                  
+
                   {/* Label */}
                   <span className="flex-1 text-sm font-medium">{item.name}</span>
-                  
+
                   {/* Hover effect */}
                   {!isActive && (
                     <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 to-blue-500/0 group-hover:from-blue-500/5 group-hover:to-blue-500/0 transition-all duration-200" />
@@ -226,6 +208,17 @@ export default function Sidebar() {
                 </Link>
               );
             })}
+
+            {/* Logout Button */}
+            <button
+              onClick={handleLogout}
+              className="w-full text-left group relative flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+            >
+              <span className="flex-shrink-0 transition-transform group-hover:scale-110 text-red-500 dark:text-red-400">
+                <LogoutIcon />
+              </span>
+              <span className="flex-1 text-sm font-medium">Logout</span>
+            </button>
           </nav>
 
           {/* Footer */}

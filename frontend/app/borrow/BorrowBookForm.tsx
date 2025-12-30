@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { transactionAPI } from '@/lib/api';
 
 interface Book {
-  id: number;
+  id: string; // Changed to string for MongoDB compatibility
   title: string;
   author: string;
   isbn: string;
@@ -12,7 +13,7 @@ interface Book {
 }
 
 interface Member {
-  id: number;
+  id: string; // Changed to string
   name: string;
   email: string;
   membershipId: string;
@@ -22,16 +23,18 @@ interface Member {
 }
 
 interface BorrowBookFormProps {
-  books: Book[];
-  members: Member[];
+  books: any[]; // Relaxed type to accept API data
+  members: any[];
+  onBorrowSuccess?: () => void;
 }
 
-export default function BorrowBookForm({ books, members }: BorrowBookFormProps) {
+export default function BorrowBookForm({ books, members, onBorrowSuccess }: BorrowBookFormProps) {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [borrowDate, setBorrowDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const calculateDueDate = (days: number) => {
     const date = new Date(borrowDate);
@@ -39,14 +42,28 @@ export default function BorrowBookForm({ books, members }: BorrowBookFormProps) 
     setDueDate(date.toISOString().split('T')[0]);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Book "${selectedBook?.title}" borrowed to ${selectedMember?.name}`);
-    // Reset form
-    setSelectedBook(null);
-    setSelectedMember(null);
-    setDueDate('');
-    setNotes('');
+    if (!selectedBook || !selectedMember) return;
+
+    setLoading(true);
+    try {
+      await transactionAPI.borrowBook(selectedMember.id, selectedBook.id);
+      alert(`Book "${selectedBook.title}" successfully issued to ${selectedMember.name}`);
+
+      // Reset form
+      setSelectedBook(null);
+      setSelectedMember(null);
+      setDueDate('');
+      setNotes('');
+
+      if (onBorrowSuccess) onBorrowSuccess();
+
+    } catch (err: any) {
+      alert(err.message || 'Failed to borrow book');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,13 +76,17 @@ export default function BorrowBookForm({ books, members }: BorrowBookFormProps) 
           </label>
           <select
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
-            onChange={(e) => setSelectedBook(books.find(b => b.id === parseInt(e.target.value)) || null)}
+            onChange={(e) => {
+              const bookId = e.target.value;
+              setSelectedBook(books.find(b => b.id === bookId) || null);
+            }}
             required
+            value={selectedBook?.id || ''}
           >
             <option value="">Search or select a book</option>
             {books.map(book => (
               <option key={book.id} value={book.id}>
-                {book.title} by {book.author} ({book.availableCopies} available)
+                {book.title} by {book.author} ({book.availableCopies || 0} available)
               </option>
             ))}
           </select>
@@ -78,13 +99,17 @@ export default function BorrowBookForm({ books, members }: BorrowBookFormProps) 
           </label>
           <select
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
-            onChange={(e) => setSelectedMember(members.find(m => m.id === parseInt(e.target.value)) || null)}
+            onChange={(e) => {
+              const memId = e.target.value;
+              setSelectedMember(members.find(m => m.id === memId) || null);
+            }}
             required
+            value={selectedMember?.id || ''}
           >
             <option value="">Search or select a member</option>
             {members.map(member => (
               <option key={member.id} value={member.id}>
-                {member.name} ({member.membershipId}) - {member.currentBorrowed}/{member.maxBooks}
+                {member.name} ({member.membershipId})
               </option>
             ))}
           </select>
@@ -104,7 +129,7 @@ export default function BorrowBookForm({ books, members }: BorrowBookFormProps) 
               </p>
             </div>
           )}
-          
+
           {selectedMember && (
             <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
               <h4 className="font-medium text-gray-900 dark:text-white mb-2">Selected Member</h4>
@@ -132,7 +157,7 @@ export default function BorrowBookForm({ books, members }: BorrowBookFormProps) 
             required
           />
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Due Date *
@@ -157,7 +182,7 @@ export default function BorrowBookForm({ books, members }: BorrowBookFormProps) 
             ))}
           </div>
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Duration
@@ -197,7 +222,7 @@ export default function BorrowBookForm({ books, members }: BorrowBookFormProps) 
           required
         />
         <label htmlFor="terms" className="text-sm text-gray-600 dark:text-gray-400">
-          I confirm that the member has agreed to the borrowing terms and conditions, 
+          I confirm that the member has agreed to the borrowing terms and conditions,
           including late return fines of ₹10 per day per book.
         </label>
       </div>
@@ -218,10 +243,15 @@ export default function BorrowBookForm({ books, members }: BorrowBookFormProps) 
         </button>
         <button
           type="submit"
-          disabled={!selectedBook || !selectedMember || !dueDate}
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium"
+          disabled={!selectedBook || !selectedMember || !dueDate || loading}
+          className={`
+            px-6 py-2 bg-blue-600 hover:bg-blue-700 
+            disabled:bg-gray-400 disabled:cursor-not-allowed 
+            text-white rounded-lg font-medium transition-all
+            ${loading ? 'opacity-75' : ''}
+          `}
         >
-          Issue Book
+          {loading ? 'Processing...' : 'Issue Book'}
         </button>
       </div>
     </form>
