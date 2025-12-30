@@ -2,7 +2,7 @@ interface StatCardProps {
   title: string;
   value: string;
   icon: string;
-  trend: { value: string; isPositive: boolean };
+  trend?: { value: string; isPositive: boolean };
   color: string;
 }
 
@@ -16,6 +16,7 @@ export default function StatCard({ title, value, icon, trend, color }: StatCardP
     indigo: 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300',
     pink: 'bg-pink-100 dark:bg-pink-900 text-pink-600 dark:text-pink-300',
     orange: 'bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300',
+    emerald: 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300',
   };
 
   return (
@@ -24,16 +25,17 @@ export default function StatCard({ title, value, icon, trend, color }: StatCardP
         <div>
           <p className="text-sm text-gray-600 dark:text-gray-400">{title}</p>
           <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{value}</p>
-          <div className="flex items-center mt-2">
-            <span className={`inline-flex items-center text-sm ${
-              trend.isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-            }`}>
-              {trend.isPositive ? '↗' : '↘'} {trend.value}
-              <span className="ml-1 text-gray-600 dark:text-gray-400">from last month</span>
-            </span>
-          </div>
+          {trend && (
+            <div className="flex items-center mt-2">
+              <span className={`inline-flex items-center text-sm ${trend.isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                }`}>
+                {trend.isPositive ? '↗' : '↘'} {trend.value}
+                <span className="ml-1 text-gray-600 dark:text-gray-400">from last month</span>
+              </span>
+            </div>
+          )}
         </div>
-        <div className={`p-3 rounded-lg ${colorClasses[color as keyof typeof colorClasses]}`}>
+        <div className={`p-3 rounded-lg ${colorClasses[color as keyof typeof colorClasses] || colorClasses.blue}`}>
           <span className="text-2xl">{icon}</span>
         </div>
       </div>

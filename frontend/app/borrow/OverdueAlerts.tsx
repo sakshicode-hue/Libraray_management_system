@@ -2,20 +2,28 @@
 
 import { useState } from 'react';
 
-export default function OverdueAlerts() {
-  const [alerts, setAlerts] = useState([
-    { id: 1, member: 'John Doe', book: 'The Catcher in the Rye', daysOverdue: 5, fine: '₹50' },
-    { id: 2, member: 'Jane Smith', book: 'Pride and Prejudice', daysOverdue: 3, fine: '₹30' },
-  ]);
-  
-  const dismissAlert = (id: number) => {
-    setAlerts(alerts.filter(alert => alert.id !== id));
+interface OverdueAlertsProps {
+  transactions?: any[];
+}
+
+export default function OverdueAlerts({ transactions = [] }: OverdueAlertsProps) {
+  // Filter for overdue transactions
+  const overdueTransactions = transactions.filter((t: any) =>
+    t.status?.toLowerCase() === 'overdue'
+  );
+
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+
+  const visibleAlerts = overdueTransactions.filter(t => !dismissedIds.includes(t.id));
+
+  const dismissAlert = (id: string) => {
+    setDismissedIds(prev => [...prev, id]);
   };
-  
-  if (alerts.length === 0) {
+
+  if (visibleAlerts.length === 0) {
     return null;
   }
-  
+
   return (
     <div className="bg-gradient-to-r from-red-500 to-orange-500 rounded-xl shadow-lg p-4 text-white">
       <div className="flex justify-between items-center mb-3">
@@ -25,32 +33,39 @@ export default function OverdueAlerts() {
           </div>
           <div>
             <h3 className="font-semibold">Overdue Books Alert</h3>
-            <p className="text-sm opacity-90">{alerts.length} books need immediate attention</p>
+            <p className="text-sm opacity-90">{visibleAlerts.length} books need immediate attention</p>
           </div>
         </div>
         <button
-          onClick={() => setAlerts([])}
+          onClick={() => setDismissedIds(overdueTransactions.map((t: any) => t.id))}
           className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm"
         >
           Dismiss All
         </button>
       </div>
-      
+
       <div className="space-y-2">
-        {alerts.map(alert => (
+        {visibleAlerts.map((alert: any) => (
           <div key={alert.id} className="flex justify-between items-center p-3 bg-white/10 rounded-lg">
             <div>
-              <p className="font-medium">{alert.member}</p>
-              <p className="text-sm opacity-90">{alert.book}</p>
+              <p className="font-medium">{alert.memberName}</p>
+              <p className="text-sm opacity-90">{alert.bookTitle}</p>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="font-medium">{alert.daysOverdue} days overdue</span>
-              <span className="font-medium">{alert.fine}</span>
+              <span className="font-medium">
+                {(() => {
+                  const due = new Date(alert.dueDate);
+                  const today = new Date();
+                  const diffDays = Math.ceil((today.getTime() - due.getTime()) / (1000 * 3600 * 24));
+                  return `${diffDays} days overdue`;
+                })()}
+              </span>
+              {/* <span className="font-medium">Fine: ?</span> */}
               <div className="flex space-x-2">
                 <button className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded text-sm">
                   Send Reminder
                 </button>
-                <button 
+                <button
                   onClick={() => dismissAlert(alert.id)}
                   className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded text-sm"
                 >
