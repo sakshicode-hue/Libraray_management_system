@@ -1,3 +1,6 @@
 # Environment folder
 
 /libra
+/frontend/node_modules
+/frontend/.next
+/backend/venv

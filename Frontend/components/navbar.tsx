@@ -32,42 +32,42 @@ const Navbar = () => {
         }
     }, [router])
     const handlesidebar = (): void => {
-       document.querySelector(".sidebar")?.classList.add("left-0")
+        document.querySelector(".sidebar")?.classList.add("left-0")
     }
     return (
         <>
             <div className='my-4 flex items-center justify-between mx-2 sm:mx-10'>
-                    <Menu onClick={handlesidebar} size={30} className='text-[#6841c4] block xl:hidden' />
-                    <div className="sm:flex hidden items-center  text-[#6841c4] md:text-xl font-extrabold gap-2 border border-[#e3e7ea] w-fit px-2 py-1 text-sm ">
-                        <div>
+                <Menu onClick={handlesidebar} size={30} className='text-[#6841c4] block xl:hidden' />
+                <div className="sm:flex hidden items-center  text-[#6841c4] md:text-xl font-extrabold gap-2 border border-[#e3e7ea] w-fit px-2 py-1 text-sm ">
+                    <div>
 
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width={24}
-                                height={24}
-                                fill="none"
-                                className="injected-svg"
-                                color="#6841c4"
-                                data-src="https://cdn.hugeicons.com/icons/book-edit-stroke-standard.svg"
-                            >
-                                <path
-                                    stroke="#6841c4"
-                                    strokeLinejoin="round"
-                                    strokeWidth={1.5}
-                                    d="M15 19v2h2l5-5-2-2-5 5Z"
-                                />
-                                <path
-                                    stroke="#6841c4"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={1.5}
-                                    d="M12 5.5V20s-3.5-3.686-10-2.106v-14.5C8.5 1.814 12 5.5 12 5.5Zm0 0s3.5-3.686 10-2.106V11.5"
-                                />
-                            </svg>
-                        </div>
-
-                        ASPIRE LMS
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width={24}
+                            height={24}
+                            fill="none"
+                            className="injected-svg"
+                            color="#6841c4"
+                            data-src="https://cdn.hugeicons.com/icons/book-edit-stroke-standard.svg"
+                        >
+                            <path
+                                stroke="#6841c4"
+                                strokeLinejoin="round"
+                                strokeWidth={1.5}
+                                d="M15 19v2h2l5-5-2-2-5 5Z"
+                            />
+                            <path
+                                stroke="#6841c4"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.5}
+                                d="M12 5.5V20s-3.5-3.686-10-2.106v-14.5C8.5 1.814 12 5.5 12 5.5Zm0 0s3.5-3.686 10-2.106V11.5"
+                            />
+                        </svg>
                     </div>
+
+                    STUDY LMS
+                </div>
 
                 <div className='flex items-center gap-3'>
 

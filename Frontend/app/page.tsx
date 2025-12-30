@@ -84,7 +84,7 @@ export default function HomePage() {
       }
       const response = await data.json()
       localStorage.setItem("user", JSON.stringify(response.user_id))
-      window.location.href="/dashboard"
+      window.location.href = "/dashboard"
     }
     catch (err) {
       toast.error("Something went wrong")
@@ -144,15 +144,22 @@ export default function HomePage() {
     <>
       <Toaster />
       <div className='w-full h-screen flex items-center justify-center'>
-        <div className="w-[45%] h-full relative hidden lg:block">
-          <Image
-            src="/Main.jpeg"
-            alt="logo"
-            fill
-            priority
-            sizes="100%"
-          />
+        <div className="
+          w-[45%] h-full relative hidden lg:flex
+          items-center justify-center
+          bg-gradient-to-b from-blue-500 to-blue-900
+          rounded-br-[10%]
+        ">
+          <div className="text-center text-white px-6">
+            <h1 className="text-4xl font-bold mb-4">
+              Welcome
+            </h1>
+            <p className="text-lg font-medium opacity-90">
+              Sign in to Library Management System
+            </p>
+          </div>
         </div>
+
 
         <div className='lg:w-[55%] w-full h-full flex flex-col justify-center'>
           <div className='md:w-[65%] w-[90%] flex flex-col gap-5  mx-auto'>
@@ -185,16 +192,16 @@ export default function HomePage() {
                 </svg>
               </div>
 
-              ASPIRE LMS
+              STUDY LMS
             </div >
             <div className='flex flex-col items-start gap-2'>
-              <h2 className='font-semibold text-xl'>Login to Aspire LMS</h2>
+              <h2 className='font-semibold text-xl'>Login to STUDY LMS</h2>
               <p className='text-[#989b9a]'>USER LOGIN</p>
             </div>
             {
               !loading ?
                 <button onClick={() => { signIn("google", { callbackUrl: "/dashboard" }); setloading(true) }}
-                  className="cursor-pointer text-black flex gap-2 items-center bg-white py-2 font-medium text-sm hover:bg-[#f7f7f7] transition-all ease-in duration-200 border border-[#f2f2f2] justify-center  my-1 rounded-sm  "
+                  className="cursor-pointer text-black flex gap-2 items-center bg-blue-300 py-2 font-medium text-sm hover:bg-[#f7f7f7] transition-all ease-in duration-200 border border-[#f2f2f2] justify-center  my-1 rounded-sm  "
                 >
                   <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" className="w-6">
                     <path
@@ -231,7 +238,7 @@ export default function HomePage() {
               <label className='font-semibold text-sm' htmlFor="email">Email</label>
               <div className='border border-[#dedede] flex items-center rounded-sm py-2 px-3 gap-2'>
                 <User size={20} />
-                <input  value={inputs.email} onChange={handlechange} autoFocus className='border-none outline-0 w-full' name='email' type="email" placeholder='Email' />
+                <input value={inputs.email} onChange={handlechange} autoFocus className='border-none outline-0 w-full' name='email' type="email" placeholder='Email' />
               </div>
             </div>
             <div className='flex flex-col gap-2 relative '>

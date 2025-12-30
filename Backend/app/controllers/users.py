@@ -146,18 +146,38 @@ def createuser(user:AuthUser):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error {e}",)
 
-def getbyid(user:GetUser):
-    conn=get_connection()
-    cursor=conn.cursor()
+def getbyid(user: GetUser):
+    conn = get_connection()
+    cursor = conn.cursor()
     try:
-        cursor.execute("SELECT User_Name,Email,Membership_Type FROM users WHERE User_id = %s", (user.user_id,))
-        result=cursor.fetchone()
-        result_dict=[dict(zip(["User_Name","Email","Membership_Type"], result))]
+        cursor.execute(
+            "SELECT User_Name, Email, Membership_Type, Role FROM users WHERE User_id = %s",
+            (user.user_id,)
+        )
+        result = cursor.fetchone()
+
+        if not result:
+            return []
+
+        role_value = False if result[3] == "Standard-User" else True
+
+        result_dict = [{
+            "User_Name": result[0],
+            "Email": result[1],
+            "Membership_Type": result[2],
+            "role": role_value
+        }]
+
         return result_dict
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error {e}",)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Database error {e}"
+        )
     finally:
         conn.close()
+
 
 def delete_user(user:GetUser):
     conn=get_connection()

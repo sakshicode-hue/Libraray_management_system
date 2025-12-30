@@ -203,12 +203,13 @@ const UserDetails = () => {
                 },
                 body: JSON.stringify({
 
-                    user_id: "Sdd36ab6",
+                    user_id: JSON.parse(localStorage.getItem("user") || ""),
                     old_password: Passwords.OldPassword,
                     new_password: Passwords.NewPassword
 
                 })
             })
+            console.log(data)
             if (!data.ok) {
                 const error = await data.json()
                 toast.error(error.detail)
