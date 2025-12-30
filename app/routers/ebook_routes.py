@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, File, UploadFile, Form
-from app.controllers.ebook_controller import list_ebooks, upload_ebook, download_ebook, save_bookmark, get_bookmark
+from app.controllers.ebook_controller import list_ebooks, upload_ebook, download_ebook
 from app.utils.auth import librarian_required, member_required, get_current_user
 from typing import Optional
 
@@ -25,19 +25,4 @@ async def download_ebook_file(ebook_id: str):
     """Download an e-book file"""
     return await download_ebook(ebook_id)
 
-@router.post("/{ebook_id}/bookmark", dependencies=[Depends(member_required)])
-async def save_reading_bookmark(
-    ebook_id: str,
-    page_number: int,
-    current_user: dict = Depends(get_current_user)
-):
-    """Save bookmark for an e-book"""
-    return await save_bookmark(str(current_user["_id"]), ebook_id, page_number)
 
-@router.get("/{ebook_id}/bookmark", dependencies=[Depends(member_required)])
-async def get_reading_bookmark(
-    ebook_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    """Get bookmark for an e-book"""
-    return await get_bookmark(str(current_user["_id"]), ebook_id)

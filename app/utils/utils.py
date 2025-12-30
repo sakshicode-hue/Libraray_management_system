@@ -10,11 +10,11 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt"""
-    return pwd_context.hash(password)
+    return pwd_context.hash(password.encode('utf-8')[:72])
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    return pwd_context.verify(plain_password.encode('utf-8')[:72], hashed_password)
 
 def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     """Create a JWT access token"""
@@ -51,3 +51,12 @@ def calculate_fine(due_date: datetime, return_date: datetime = None) -> float:
     
     overdue_days = (return_date - due_date).days
     return overdue_days * settings.FINE_PER_DAY
+
+async def send_notification(user_id: str, message: str):
+    """
+    Send a notification to the user.
+    For this MVP, we will print to console/log.
+    """
+    print(f"--- NOTIFICATION FOR {user_id} ---")
+    print(message)
+    print("-----------------------------------")

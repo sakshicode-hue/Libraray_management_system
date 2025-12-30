@@ -1,4 +1,4 @@
-from app.cores.database import fines_collection, transactions_collection, members_collection
+from app.cores.database import fines_collection, transactions_collection, users_collection
 from app.schemas.fine_schema import PayFineRequest, WaiveFineRequest
 from app.cores.config import settings
 from fastapi import HTTPException, status
@@ -41,7 +41,7 @@ async def list_fines(
     cursor = fines_collection.find(query).sort("created_at", -1).skip(skip).limit(page_size)
     async for fine in cursor:
         # Get member details
-        member = await members_collection.find_one({"_id": ObjectId(fine["member_id"])})
+        member = await users_collection.find_one({"_id": ObjectId(fine["member_id"])})
         
         fine["id"] = str(fine.pop("_id"))
         if member:

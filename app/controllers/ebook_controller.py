@@ -1,4 +1,4 @@
-from app.cores.database import ebooks_collection, bookmarks_collection, fs, users_collection
+from app.cores.database import ebooks_collection, fs, users_collection
 from fastapi import HTTPException, status, UploadFile
 from fastapi.responses import StreamingResponse
 from bson import ObjectId
@@ -108,57 +108,4 @@ async def download_ebook(ebook_id: str):
             detail="Error downloading file"
         )
 
-async def save_bookmark(user_id: str, ebook_id: str, page_number: int):
-    """Save or update bookmark for an e-book"""
-    if not ObjectId.is_valid(ebook_id):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid e-book ID"
-        )
-    
-    # Check if bookmark exists
-    existing = await bookmarks_collection.find_one({
-        "user_id": user_id,
-        "ebook_id": ebook_id
-    })
-    
-    if existing:
-        # Update existing bookmark
-        await bookmarks_collection.update_one(
-            {"_id": existing["_id"]},
-            {
-                "$set": {
-                    "page_number": page_number,
-                    "last_read": datetime.utcnow()
-                }
-            }
-        )
-    else:
-        # Create new bookmark
-        bookmark_doc = {
-            "user_id": user_id,
-            "ebook_id": ebook_id,
-            "page_number": page_number,
-            "last_read": datetime.utcnow()
-        }
-        await bookmarks_collection.insert_one(bookmark_doc)
-    
-    return {
-        "message": "Bookmark saved successfully",
-        "page_number": page_number
-    }
 
-async def get_bookmark(user_id: str, ebook_id: str):
-    """Get bookmark for an e-book"""
-    bookmark = await bookmarks_collection.find_one({
-        "user_id": user_id,
-        "ebook_id": ebook_id
-    })
-    
-    if not bookmark:
-        return {"page_number": 1, "last_read": None}
-    
-    return {
-        "page_number": bookmark["page_number"],
-        "last_read": bookmark["last_read"]
-    }

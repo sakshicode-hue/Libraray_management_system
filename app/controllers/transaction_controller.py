@@ -1,4 +1,4 @@
-from app.cores.database import transactions_collection, books_collection, members_collection, fines_collection
+from app.cores.database import transactions_collection, books_collection, users_collection, fines_collection
 from app.schemas.transaction_schema import BorrowRequest, ReturnRequest
 from app.utils.utils import calculate_fine
 from app.cores.config import settings
@@ -182,7 +182,7 @@ async def get_overdue_transactions():
     cursor = transactions_collection.find(query).sort("due_date", 1)
     async for transaction in cursor:
         # Get member and book details
-        member = await members_collection.find_one({"_id": ObjectId(transaction["member_id"])})
+        member = await users_collection.find_one({"_id": ObjectId(transaction["member_id"])})
         book = await books_collection.find_one({"_id": ObjectId(transaction["book_id"])})
         
         # Calculate current fine
@@ -242,7 +242,7 @@ async def check_member_eligibility(member_id: str):
         )
     
     # Get member
-    member = await members_collection.find_one({"_id": ObjectId(member_id)})
+    member = await users_collection.find_one({"_id": ObjectId(member_id)})
     if not member:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

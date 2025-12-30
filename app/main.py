@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+import logging
+import time
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import (
     auth_routes, book_routes, member_routes, transaction_routes,
@@ -11,6 +13,28 @@ app = FastAPI(
     description="Comprehensive Library Management System with 54 API endpoints",
     version="1.0.0"
 )
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    logger.info(
+        f"Method: {request.method} Path: {request.url.path} "
+        f"Status: {response.status_code} Time: {process_time:.2f}s"
+    )
+    return response
+
+from app.scheduler import start_scheduler
+
+@app.on_event("startup")
+async def startup_event():
+    start_scheduler()
+
 
 # ✅ CORS CONFIG
 app.add_middleware(

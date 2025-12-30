@@ -1,4 +1,4 @@
-from app.cores.database import reservations_collection, books_collection, members_collection
+from app.cores.database import reservations_collection, books_collection, users_collection
 from app.schemas.reservation_schema import ReservationCreate
 from fastapi import HTTPException, status
 from bson import ObjectId
@@ -29,7 +29,7 @@ async def list_reservations(member_id: str = None, book_id: str = None):
     async for reservation in cursor:
         # Get book and member details
         book = await books_collection.find_one({"_id": ObjectId(reservation["book_id"])})
-        member = await members_collection.find_one({"_id": ObjectId(reservation["member_id"])})
+        member = await users_collection.find_one({"_id": ObjectId(reservation["member_id"])})
         
         reservation["id"] = str(reservation.pop("_id"))
         if book:
@@ -39,7 +39,7 @@ async def list_reservations(member_id: str = None, book_id: str = None):
             }
         if member:
             reservation["member_details"] = {
-                "membership_id": member["membership_id"]
+                "membership_id": member.get("membership_id")
             }
         reservations.append(reservation)
     
@@ -58,7 +58,7 @@ async def create_reservation(reservation_data: ReservationCreate):
         )
     
     # Check if member exists
-    member = await members_collection.find_one({"_id": ObjectId(reservation_data.member_id)})
+    member = await users_collection.find_one({"_id": ObjectId(reservation_data.member_id)})
     if not member:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -168,7 +168,7 @@ async def get_reservation_queue(book_id: str):
     }).sort("queue_position", 1)
     
     async for reservation in cursor:
-        member = await members_collection.find_one({"_id": ObjectId(reservation["member_id"])})
+        member = await users_collection.find_one({"_id": ObjectId(reservation["member_id"])})
         
         reservation["id"] = str(reservation.pop("_id"))
         if member:

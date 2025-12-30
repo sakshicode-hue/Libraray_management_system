@@ -32,6 +32,11 @@ async def register_user(user_data: UserRegister):
         "password_hash": hash_password(user_data.password),
         "full_name": user_data.full_name,
         "role": user_data.role,
+        "phone": user_data.phone,
+        "address": user_data.address,
+        "membership_type": user_data.membership_type,
+        "membership_start": datetime.utcnow() if user_data.role == "member" else None,
+        "max_books_allowed": 5, # Default
         "is_active": True,
         "created_at": datetime.utcnow()
     }
@@ -78,7 +83,10 @@ async def login_user(login_data: UserLogin):
             "id": str(user["_id"]),
             "email": user["email"],
             "full_name": user["full_name"],
-            "role": user["role"]
+            "role": user["role"],
+            "phone": user.get("phone"),
+            "address": user.get("address"),
+            "membership_type": user.get("membership_type")
         }
     }
 

@@ -1,4 +1,4 @@
-from app.cores.database import members_collection, users_collection, transactions_collection
+from app.cores.database import users_collection, transactions_collection
 from app.schemas.member_schema import MemberCreate, MemberUpdate
 from app.cores.config import settings
 from fastapi import HTTPException, status
@@ -15,7 +15,7 @@ async def generate_membership_id():
         membership_id = f"MEM-{random_part}"
         
         # Check if already exists
-        existing = await members_collection.find_one({"membership_id": membership_id})
+        existing = await users_collection.find_one({"membership_id": membership_id})
         if not existing:
             return membership_id
 
@@ -27,21 +27,23 @@ async def list_members(page: int = 1, page_size: int = None):
     page_size = min(page_size, settings.MAX_PAGE_SIZE)
     skip = (page - 1) * page_size
     
-    total = await members_collection.count_documents({})
+    # Filter for role="member"
+    query = {"role": "member"}
+    
+    total = await users_collection.count_documents(query)
     
     members = []
-    cursor = members_collection.find({}).skip(skip).limit(page_size)
+    cursor = users_collection.find(query).skip(skip).limit(page_size)
     async for member in cursor:
-        # Get user details
-        user = await users_collection.find_one({"_id": ObjectId(member["user_id"])})
-        
-        member["id"] = str(member.pop("_id"))
-        if user:
-            member["user_details"] = {
-                "email": user["email"],
-                "full_name": user["full_name"]
-            }
-        members.append(member)
+        member_dict = member.copy()
+        member_dict["id"] = str(member_dict.pop("_id"))
+        member_dict["user_id"] = member_dict["id"] # Consistent ID
+        # User details are already in the document
+        member_dict["user_details"] = {
+            "email": member_dict.get("email"),
+            "full_name": member_dict.get("full_name")
+        }
+        members.append(member_dict)
     
     return {
         "members": members,
@@ -52,7 +54,7 @@ async def list_members(page: int = 1, page_size: int = None):
     }
 
 async def add_member(member_data: MemberCreate):
-    """Add a new member"""
+    """Promote existing user to member or update member details"""
     # Validate user exists
     if not ObjectId.is_valid(member_data.user_id):
         raise HTTPException(
@@ -67,14 +69,13 @@ async def add_member(member_data: MemberCreate):
             detail="User not found"
         )
     
-    # Check if member already exists for this user
-    existing_member = await members_collection.find_one({"user_id": member_data.user_id})
-    if existing_member:
+    # Check if already a member/has membership_id
+    if user.get("membership_id"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Member profile already exists for this user"
+            detail="User is already a member"
         )
-    
+
     # Validate membership type
     if member_data.membership_type not in ["standard", "premium"]:
         raise HTTPException(
@@ -85,25 +86,33 @@ async def add_member(member_data: MemberCreate):
     # Set max books based on membership type
     max_books = 10 if member_data.membership_type == "premium" else settings.MAX_BOOKS_PER_MEMBER
     
-    member_doc = {
-        **member_data.model_dump(),
-        "membership_id": await generate_membership_id(),
+    membership_id = await generate_membership_id()
+    
+    update_data = {
+        "role": "member", # Ensure role is member
+        "phone": member_data.phone,
+        "address": member_data.address,
+        "membership_type": member_data.membership_type,
+        "membership_id": membership_id,
         "membership_start": datetime.utcnow(),
-        "membership_end": datetime.utcnow() + timedelta(days=365),  # 1 year
+        "membership_end": datetime.utcnow() + timedelta(days=365),
         "max_books_allowed": max_books,
         "is_active": True
     }
     
-    result = await members_collection.insert_one(member_doc)
+    await users_collection.update_one(
+        {"_id": ObjectId(member_data.user_id)},
+        {"$set": update_data}
+    )
     
     return {
-        "message": "Member added successfully",
-        "member_id": str(result.inserted_id),
-        "membership_id": member_doc["membership_id"]
+        "message": "User promoted to member successfully",
+        "member_id": member_data.user_id,
+        "membership_id": membership_id
     }
 
 async def update_member(member_id: str, member_update: MemberUpdate):
-    """Update member details"""
+    """Update member details (maps to updating user)"""
     if not ObjectId.is_valid(member_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -118,7 +127,8 @@ async def update_member(member_id: str, member_update: MemberUpdate):
             detail="No update data provided"
         )
     
-    result = await members_collection.update_one(
+    # Update user directly since member data is in users_collection
+    result = await users_collection.update_one(
         {"_id": ObjectId(member_id)},
         {"$set": update_data}
     )
@@ -139,41 +149,30 @@ async def search_members(query: str, page: int = 1, page_size: int = None):
     page_size = min(page_size, settings.MAX_PAGE_SIZE)
     skip = (page - 1) * page_size
     
-    # Search in members collection
+    # Search in users collection where role is member
     member_query = {
+        "role": "member",
         "$or": [
-            {"membership_id": {"$regex": query, "$options": "i"}},
-            {"phone": {"$regex": query, "$options": "i"}}
+             {"membership_id": {"$regex": query, "$options": "i"}},
+             {"phone": {"$regex": query, "$options": "i"}},
+             {"email": {"$regex": query, "$options": "i"}},
+             {"full_name": {"$regex": query, "$options": "i"}}
         ]
     }
     
-    # Also search in users collection
-    users = []
-    async for user in users_collection.find({
-        "$or": [
-            {"email": {"$regex": query, "$options": "i"}},
-            {"full_name": {"$regex": query, "$options": "i"}}
-        ]
-    }):
-        users.append(str(user["_id"]))
-    
-    if users:
-        member_query["$or"].append({"user_id": {"$in": users}})
-    
-    total = await members_collection.count_documents(member_query)
+    total = await users_collection.count_documents(member_query)
     
     members = []
-    cursor = members_collection.find(member_query).skip(skip).limit(page_size)
+    cursor = users_collection.find(member_query).skip(skip).limit(page_size)
     async for member in cursor:
-        user = await users_collection.find_one({"_id": ObjectId(member["user_id"])})
-        
-        member["id"] = str(member.pop("_id"))
-        if user:
-            member["user_details"] = {
-                "email": user["email"],
-                "full_name": user["full_name"]
-            }
-        members.append(member)
+        member_dict = member.copy()
+        member_dict["id"] = str(member_dict.pop("_id"))
+        member_dict["user_id"] = member_dict["id"]
+        member_dict["user_details"] = {
+            "email": member_dict.get("email"),
+            "full_name": member_dict.get("full_name")
+        }
+        members.append(member_dict)
     
     return {
         "members": members,
@@ -183,32 +182,30 @@ async def search_members(query: str, page: int = 1, page_size: int = None):
     }
 
 async def get_member_profile(member_id: str):
-    """Get member profile with user details"""
+    """Get member profile by ID"""
     if not ObjectId.is_valid(member_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid member ID"
         )
     
-    member = await members_collection.find_one({"_id": ObjectId(member_id)})
+    member = await users_collection.find_one({"_id": ObjectId(member_id), "role": "member"})
     if not member:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Member not found"
         )
     
-    # Get user details
-    user = await users_collection.find_one({"_id": ObjectId(member["user_id"])})
+    member_dict = member.copy()
+    member_dict["id"] = str(member_dict.pop("_id"))
+    member_dict["user_id"] = member_dict["id"]
+    member_dict["user_details"] = {
+        "email": member_dict.get("email"),
+        "full_name": member_dict.get("full_name"),
+        "role": member_dict.get("role")
+    }
     
-    member["id"] = str(member.pop("_id"))
-    if user:
-        member["user_details"] = {
-            "email": user["email"],
-            "full_name": user["full_name"],
-            "role": user["role"]
-        }
-    
-    return member
+    return member_dict
 
 async def get_borrowing_history(member_id: str):
     """Get member's borrowing history"""
@@ -219,7 +216,7 @@ async def get_borrowing_history(member_id: str):
         )
     
     # Verify member exists
-    member = await members_collection.find_one({"_id": ObjectId(member_id)})
+    member = await users_collection.find_one({"_id": ObjectId(member_id)})
     if not member:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

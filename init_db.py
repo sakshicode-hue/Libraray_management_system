@@ -32,6 +32,34 @@ async def test_connection():
         await db.transactions.create_index("member_id")
         await db.transactions.create_index("book_id")
         print("- Transaction indexes created")
+
+        # Member indexes
+        await db.members.create_index("email", unique=True)
+        print("- Member indexes created")
+
+        # Fine indexes
+        await db.fines.create_index("member_id")
+        await db.fines.create_index("status")
+        print("- Fine indexes created")
+
+        # Reservation indexes
+        await db.reservations.create_index("member_id")
+        await db.reservations.create_index("book_id")
+        await db.reservations.create_index("status")
+        print("- Reservation indexes created")
+
+        # Ebook indexes
+        await db.ebooks.create_index("title")
+        await db.ebooks.create_index("author")
+        print("- Ebook indexes created")
+
+        # Bookmark indexes
+        await db.bookmarks.create_index("user_id")
+        print("- Bookmark indexes created")
+        
+        # System Settings (Ensure exists by creating a dummy index or just checking)
+        await db.system_settings.create_index("key", unique=True)
+        print("- System Settings indexes created")
         
         print("Database initialized successfully!")
         

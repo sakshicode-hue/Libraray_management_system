@@ -9,12 +9,11 @@ db = client["Library_Management_System"]
 # Collections
 users_collection = db["users"]
 books_collection = db["books"]
-members_collection = db["members"]
 transactions_collection = db["transactions"]
 fines_collection = db["fines"]
 reservations_collection = db["reservations"]
 ebooks_collection = db["ebooks"]
-bookmarks_collection = db["bookmarks"]
+
 system_settings_collection = db["system_settings"]
 
 # GridFS for e-book file storage

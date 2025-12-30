@@ -68,3 +68,4 @@ build/
 # Misc
 # ===============================
 node_modules/
+app/library/

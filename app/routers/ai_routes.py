@@ -1,20 +1,10 @@
-from fastapi import APIRouter
-from app.controllers.ai_controller import chat_assistant, query_data, get_analytics
-from app.schemas.ai_schema import ChatRequest, QueryRequest
+from fastapi import APIRouter, Depends
+from app.controllers.ai_controller import handle_chat_request
+from app.schemas.ai_schema import ChatRequest, ChatResponse
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 
-@router.post("/chat")
+@router.post("/chat", response_model=ChatResponse)
 async def chat(chat_data: ChatRequest):
     """Chat with AI assistant"""
-    return await chat_assistant(chat_data)
-
-@router.post("/query")
-async def query(query_data: QueryRequest):
-    """Natural language query to database"""
-    return await query_data(query_data)
-
-@router.get("/analytics")
-async def analytics():
-    """Get AI-powered analytics insights"""
-    return await get_analytics()
+    return await handle_chat_request(chat_data)

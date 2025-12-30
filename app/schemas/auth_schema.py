@@ -7,6 +7,10 @@ class UserRegister(BaseModel):
     password: str = Field(..., min_length=6)
     full_name: str
     role: str = "member"  # Default role
+    # Extended fields for members
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    membership_type: str = "standard"
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -29,6 +33,9 @@ class UserResponse(BaseModel):
     email: str
     full_name: str
     role: str
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    membership_type: Optional[str] = None
     is_active: bool
     created_at: datetime
 

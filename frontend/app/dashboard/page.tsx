@@ -10,6 +10,7 @@ import OverdueBooksTable from '@/app/dashboard/OverdueBooksTable';
 import PopularBooksCarousel from '@/app/dashboard/PopularBooksCarousel';
 import QuickActions from '@/app/dashboard/QuickAction';
 import SystemHealth from '@/app/dashboard/SystemHealth';
+
 import { bookAPI, reportAPI, transactionAPI, memberAPI, aiAPI } from '@/lib/api';
 
 // Mock data
@@ -67,6 +68,21 @@ export default function DashboardPage() {
   const [popularBooks, setPopularBooks] = useState<any[]>([]);
   const [aiInsights, setAiInsights] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.role === 'admin') {
+          setIsAdmin(true);
+        }
+      } catch (e) {
+        console.error("Error parsing user data", e);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     // Check for authentication token before fetching
@@ -189,6 +205,9 @@ export default function DashboardPage() {
           <StatCard key={stat.id} {...stat} />
         ))}
       </div>
+
+
+
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -319,6 +338,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
     </div>
   );
 }

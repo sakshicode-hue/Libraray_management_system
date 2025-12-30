@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 // Helper function to get auth token
 const getAuthToken = (): string | null => {
@@ -13,24 +13,31 @@ const getAuthToken = (): string | null => {
 async function handleResponse(response: Response) {
     if (!response.ok) {
         const error = await response.json().catch(() => ({ detail: 'An error occurred' }));
+        console.error(`[API Error] ${response.status} ${response.url}`, error);
         throw new Error(error.detail || `HTTP error! status: ${response.status}`);
     }
-    return response.json();
+    const data = await response.json();
+    console.log(`[API Response] ${response.status} ${response.url}`, data);
+    return data;
 }
 
 // Helper function to make authenticated requests
+// Helper function to make authenticated requests
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
     const token = getAuthToken();
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...(options.headers as Record<string, string>),
     };
 
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}${url}`, {
+    const fullUrl = `${API_BASE_URL}${url}`;
+    console.log(`[API Request] ${options.method || 'GET'} ${fullUrl}`, options.body ? JSON.parse(options.body as string) : '');
+
+    const response = await fetch(fullUrl, {
         ...options,
         headers,
     });
@@ -337,16 +344,6 @@ export const ebookAPI = {
         return response.blob();
     },
 
-    saveBookmark: async (ebook_id: string, page_number: number) => {
-        return fetchWithAuth(`/ebooks/${ebook_id}/bookmark`, {
-            method: 'POST',
-            body: JSON.stringify({ page_number }),
-        });
-    },
-
-    getBookmark: async (ebook_id: string) => {
-        return fetchWithAuth(`/ebooks/${ebook_id}/bookmark`);
-    },
 };
 
 // Report APIs
