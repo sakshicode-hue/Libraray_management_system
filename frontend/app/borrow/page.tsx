@@ -16,7 +16,6 @@ import { bookAPI, memberAPI, transactionAPI } from '@/lib/api';
 export default function BorrowPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'borrow' | 'history'>('borrow');
-  const [showBulkBorrow, setShowBulkBorrow] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Real Data State
@@ -48,22 +47,12 @@ export default function BorrowPage() {
       const [booksData, membersData, historyData, overdueData, popularData] = await Promise.all([
         bookAPI.getBooks({ page_size: 100 }), // Get reasonable amount for dropdown
         memberAPI.getMembers(1, 100),
-        transactionAPI.getHistory(undefined, 1),
+        transactionAPI.getHistory(undefined, 1, 100), // increased page_size to get more "all" books
         transactionAPI.getOverdue() as Promise<any>,
-        bookAPI.getBooks({ page_size: 5 }) // Placeholder for popular books, ideally use reportAPI.getPopularBooks if available
-        // Note: Using bookAPI for popular books temporarily as reportAPI was not fully verified/implemented in backend? 
-        // Actually api.ts has reportAPI.getPopularBooks, let's try calling it, if fails we catch it.
+        bookAPI.getBooks({ page_size: 5 })
       ]);
 
       // Transform books data
-      const transformedBooks = (booksData.books || []).map((book: any) => ({
-        ...book, // Keep original fields
-        id: book.id || book._id,
-        availableCopies: book.available_copies,
-        totalCopies: book.available_copies + (book.borrowed_count || 0) // Approximation if total_copies not directly available, or usage specific field
-      }));
-      // Actually, let's verify if total_copies is returned. If not, use what we have.
-      // Better:
       const mappedBooks = (booksData.books || []).map((b: any) => ({
         id: b.id || b._id,
         title: b.title,
@@ -71,14 +60,14 @@ export default function BorrowPage() {
         isbn: b.isbn,
         availableCopies: b.available_copies,
         totalCopies: b.total_copies || (b.available_copies + (b.borrowed_count || 0)),
-        genre: b.category, // Map category to genre if needed
+        genre: b.category,
         publisher: b.publisher,
         year: b.publication_year
       }));
 
       setBooks(mappedBooks);
 
-      // Transform members data like in Members page
+      // Transform members data
       const mappedMembers = (membersData.members || []).map((member: any) => ({
         id: member.id || member._id,
         name: member.user_details?.full_name || 'Unknown',
@@ -87,14 +76,13 @@ export default function BorrowPage() {
         phone: member.phone,
         status: member.is_active ? 'Active' : 'Inactive',
         maxBooks: member.max_books_allowed,
-        currentBorrowed: member.books_borrowed_count || member.current_borrowed_count || 0
+        currentBorrowed: member.books_borrowed_count || 0
       }));
 
       setMembers(mappedMembers);
-      setPopularBooks(mappedBooks.slice(0, 5)); // Use first 5 books as popular
+      setPopularBooks(mappedBooks.slice(0, 5));
 
-
-      // Transform history data for table
+      // Transform history data
       const txs = historyData.transactions || [];
       setTransactions(txs.map((t: any) => ({
         id: t._id,
@@ -117,7 +105,7 @@ export default function BorrowPage() {
         todayBorrows: todayBorrows,
         overdue: overdueData.overdue_books_count || 0,
         booksReturned: todayReturns,
-        finesCollected: 0, // Need fine API
+        finesCollected: 0,
         activeTransactions: txs.filter((t: any) => t.status === 'borrowed').length
       });
 
@@ -132,18 +120,6 @@ export default function BorrowPage() {
     fetchData();
   }, [router]);
 
-  const handleBulkBorrow = () => {
-    setShowBulkBorrow(true);
-    alert("Bulk borrow feature would open a modal here");
-  };
-
-  const handleGenerateReport = () => {
-    alert("Generating borrowing report...");
-  };
-
-  const handleQuickAction = (action: string) => {
-    alert(`Quick action: ${action}`);
-  };
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -153,28 +129,7 @@ export default function BorrowPage() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Borrow Management</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             Issue books to members and manage borrowing transactions.
-            <span className="ml-2 text-sm px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
-              Real-time updates
-            </span>
           </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={handleBulkBorrow}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center transition-colors shadow-md hover:shadow-lg"
-          >
-            <span className="mr-2">📋</span> Bulk Borrow
-            <span className="ml-2 text-xs bg-blue-800 px-2 py-0.5 rounded">New</span>
-          </button>
-          <button
-            onClick={handleGenerateReport}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center transition-colors shadow-md hover:shadow-lg"
-          >
-            <span className="mr-2">📄</span> Generate Report
-          </button>
-          <button className="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg flex items-center transition-colors">
-            <span className="mr-2">⚙️</span> Settings
-          </button>
         </div>
       </div>
 
@@ -205,7 +160,7 @@ export default function BorrowPage() {
       </div>
 
       {/* Overdue Alerts */}
-      <OverdueAlerts />
+      <OverdueAlerts transactions={transactions} />
 
       {/* Search Bar */}
       <div className="relative">
@@ -218,11 +173,6 @@ export default function BorrowPage() {
         />
         <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
           <span className="text-gray-500">🔍</span>
-        </div>
-        <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-          <button className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-            Advanced Search
-          </button>
         </div>
       </div>
 
@@ -278,54 +228,68 @@ export default function BorrowPage() {
             </div>
           </div>
 
-          {/* Search Books Section */}
-          <SearchBooksSection books={books} />
+          {activeTab === 'borrow' && (
+            <>
+              {/* Search Books Section */}
+              <SearchBooksSection books={books} />
 
-          {/* Borrow Form Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-            <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-              <div className="flex items-center">
-                <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg mr-3 text-white">
-                  <span className="text-2xl">📖</span>
+              {/* Borrow Form Section */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+                <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg mr-3 text-white">
+                      <span className="text-2xl">📖</span>
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Borrow Book</h2>
+                      <p className="text-gray-600 dark:text-gray-400">Fill details to issue a book to a member</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Borrow Book</h2>
-                  <p className="text-gray-600 dark:text-gray-400">Fill details to issue a book to a member</p>
+                <div className="p-6">
+                  <BorrowBookForm
+                    books={books}
+                    members={members}
+                    onBorrowSuccess={() => fetchData()}
+                  />
                 </div>
               </div>
-            </div>
-            <div className="p-6">
-              <BorrowBookForm
-                books={books}
-                members={members}
-                onBorrowSuccess={() => fetchData()}
-              />
-            </div>
-          </div>
+            </>
+          )}
 
-          {/* Recent Borrows Table */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-            <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recent Borrowing Activity</h2>
-                  <p className="text-gray-600 dark:text-gray-400">Latest transactions in the system</p>
+          {(activeTab === 'history' || activeTab === 'borrow') && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+              <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      {activeTab === 'history' ? 'All Borrowed Books History' : 'Recent Borrowing Activity'}
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {activeTab === 'history' ? 'Complete history of transactions' : 'Latest transactions in the system'}
+                    </p>
+                  </div>
+                  {activeTab === 'borrow' && (
+                    <button
+                      onClick={() => setActiveTab('history')}
+                      className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
+                    >
+                      View All Transactions →
+                    </button>
+                  )}
                 </div>
-                <button className="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">
-                  View All Transactions →
-                </button>
+              </div>
+              <div className="p-6">
+                <RecentBorrowsTable transactions={transactions} />
               </div>
             </div>
-            <div className="p-6">
-              <RecentBorrowsTable transactions={transactions} />
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Right Column - Sidebar */}
         <div className="space-y-6">
           {/* Quick Borrow Card */}
-          <QuickBorrowCard />
+          <QuickBorrowCard books={books} members={members} />
 
           {/* Member Eligibility Status */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
@@ -352,9 +316,7 @@ export default function BorrowPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                      // Need status logic
-                      }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'}`}>
                       {member.currentBorrowed}/{member.maxBooks}
                     </span>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -444,126 +406,8 @@ export default function BorrowPage() {
               ))}
             </div>
           </div>
-
-          {/* Quick Actions */}
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white">
-            <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => handleQuickAction('Return Book')}
-                className="p-3 bg-white/10 hover:bg-white/20 rounded-lg flex flex-col items-center transition-colors"
-              >
-                <span className="text-2xl mb-2">↩️</span>
-                <span className="text-sm">Return Book</span>
-              </button>
-              <button
-                onClick={() => handleQuickAction('Renew Book')}
-                className="p-3 bg-white/10 hover:bg-white/20 rounded-lg flex flex-col items-center transition-colors"
-              >
-                <span className="text-2xl mb-2">🔄</span>
-                <span className="text-sm">Renew Book</span>
-              </button>
-              <button
-                onClick={() => handleQuickAction('Add Member')}
-                className="p-3 bg-white/10 hover:bg-white/20 rounded-lg flex flex-col items-center transition-colors"
-              >
-                <span className="text-2xl mb-2">👤</span>
-                <span className="text-sm">Add Member</span>
-              </button>
-              <button
-                onClick={() => handleQuickAction('Scan ISBN')}
-                className="p-3 bg-white/10 hover:bg-white/20 rounded-lg flex flex-col items-center transition-colors"
-              >
-                <span className="text-2xl mb-2">📷</span>
-                <span className="text-sm">Scan ISBN</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Help & Support */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-            <div className="flex items-center mb-4">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg mr-3">
-                <span className="text-xl">❓</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Need Help?</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Quick guides and support</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <a href="#" className="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                <span className="mr-3">📖</span>
-                <span className="text-sm text-gray-700 dark:text-gray-300">How to process returns</span>
-              </a>
-              <a href="#" className="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                <span className="mr-3">💰</span>
-                <span className="text-sm text-gray-700 dark:text-gray-300">Fine calculation guide</span>
-              </a>
-              <a href="#" className="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                <span className="mr-3">👥</span>
-                <span className="text-sm text-gray-700 dark:text-gray-300">Member management tips</span>
-              </a>
-            </div>
-            <button className="w-full mt-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-              Contact Support
-            </button>
-          </div>
         </div>
       </div>
-
-      {/* Footer Note */}
-      <div className="text-center text-sm text-gray-500 dark:text-gray-400 pt-6 border-t border-gray-200 dark:border-gray-700">
-        <p>📊 System Status: All services operational • Last updated: Today at 10:30 AM</p>
-        <p className="mt-1">Need assistance? Contact library admin at admin@library.com or call +91 9876543210</p>
-      </div>
-
-      {/* Bulk Borrow Modal (Placeholder) */}
-      {showBulkBorrow && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Bulk Book Borrowing</h2>
-                <button
-                  onClick={() => setShowBulkBorrow(false)}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                >
-                  ✕
-                </button>
-              </div>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Upload a CSV file with member IDs and book ISBNs to process multiple borrows at once.
-              </p>
-              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
-                <div className="text-4xl mb-4">📁</div>
-                <p className="text-gray-700 dark:text-gray-300 mb-2">Drag & drop your CSV file here</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">or click to browse</p>
-                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-                  Select File
-                </button>
-              </div>
-              <div className="mt-6">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Download template:</p>
-                <button className="text-blue-600 dark:text-blue-400 hover:underline">
-                  bulk_borrow_template.csv
-                </button>
-              </div>
-              <div className="flex justify-end space-x-3 mt-8">
-                <button
-                  onClick={() => setShowBulkBorrow(false)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  Cancel
-                </button>
-                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-                  Process Bulk Borrow
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

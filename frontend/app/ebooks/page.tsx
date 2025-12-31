@@ -3,19 +3,61 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { ebookAPI } from '@/lib/api';
 
 export default function EBooksPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [darkMode, setDarkMode] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Real Data State
+  const [ebooks, setEbooks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState<number | null>(null);
 
   // Check for dark mode preference
   useEffect(() => {
     const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setDarkMode(isDark);
+    fetchData();
   }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const data = await ebookAPI.getEbooks();
+      // Handle array vs object response structure if needed, assuming array based on previous patterns or standard list response
+      const booksList = Array.isArray(data) ? data : (data.ebooks || []);
+
+      const mappedBooks = booksList.map((b: any) => ({
+        id: b.id || b._id,
+        title: b.title,
+        author: b.author,
+        category: b.category || 'General',
+        format: b.format || 'PDF', // Default to PDF if not specified
+        size: b.file_size ? `${(b.file_size / (1024 * 1024)).toFixed(1)} MB` : 'Unknown', // Convert bytes to MB
+        pages: b.num_pages || 'N/A',
+        year: b.publication_year,
+        downloads: b.download_count || 0,
+        rating: b.rating || 0, // Assuming 0 if no rating
+        description: b.description || 'No description available.',
+        coverColor: getRandomColor(), // Since backend might not have cover color, generate one
+        isFeatured: false, // No featured flag in standard API usually
+      }));
+
+      setEbooks(mappedBooks);
+    } catch (error) {
+      console.error("Failed to fetch ebooks:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getRandomColor = () => {
+    const colors = ['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
+    return colors[Math.floor(Math.random() * colors.length)];
+  };
 
   // Color Palette
   const colors = darkMode ? {
@@ -50,166 +92,24 @@ export default function EBooksPage() {
     success: '#059669',
   };
 
-  // Mock e-books data
-  const mockEBooks = [
-    {
-      id: 1,
-      title: 'The Great Gatsby',
-      author: 'F. Scott Fitzgerald',
-      category: 'Classic',
-      format: 'EPUB',
-      size: '2.5 MB',
-      pages: 180,
-      year: 1925,
-      downloads: 1560,
-      rating: 4.7,
-      availableCopies: 5,
-      totalCopies: 5,
-      description: 'A story of the fabulously wealthy Jay Gatsby and his love for the beautiful Daisy Buchanan.',
-      coverColor: '#3b82f6',
-      isFeatured: true,
-    },
-    {
-      id: 2,
-      title: 'To Kill a Mockingbird',
-      author: 'Harper Lee',
-      category: 'Classic',
-      format: 'PDF',
-      size: '3.2 MB',
-      pages: 281,
-      year: 1960,
-      downloads: 2340,
-      rating: 4.8,
-      availableCopies: 3,
-      totalCopies: 5,
-      description: 'A novel about growing up under extraordinary circumstances in the 1930s.',
-      coverColor: '#ec4899',
-      isFeatured: true,
-    },
-    {
-      id: 3,
-      title: '1984',
-      author: 'George Orwell',
-      category: 'Dystopian',
-      format: 'EPUB',
-      size: '2.8 MB',
-      pages: 328,
-      year: 1949,
-      downloads: 3120,
-      rating: 4.6,
-      availableCopies: 5,
-      totalCopies: 5,
-      description: 'A dystopian social science fiction novel and cautionary tale.',
-      coverColor: '#10b981',
-      isFeatured: false,
-    },
-    {
-      id: 4,
-      title: 'The Hobbit',
-      author: 'J.R.R. Tolkien',
-      category: 'Fantasy',
-      format: 'EPUB',
-      size: '4.5 MB',
-      pages: 310,
-      year: 1937,
-      downloads: 2870,
-      rating: 4.9,
-      availableCopies: 4,
-      totalCopies: 5,
-      description: 'A fantasy novel about the adventures of hobbit Bilbo Baggins.',
-      coverColor: '#f59e0b',
-      isFeatured: false,
-    },
-    {
-      id: 5,
-      title: 'Pride and Prejudice',
-      author: 'Jane Austen',
-      category: 'Romance',
-      format: 'PDF',
-      size: '2.1 MB',
-      pages: 279,
-      year: 1813,
-      downloads: 1890,
-      rating: 4.5,
-      availableCopies: 5,
-      totalCopies: 5,
-      description: 'A romantic novel of manners that depicts the emotional development of protagonist Elizabeth Bennet.',
-      coverColor: '#8b5cf6',
-      isFeatured: true,
-    },
-    {
-      id: 6,
-      title: 'The Catcher in the Rye',
-      author: 'J.D. Salinger',
-      category: 'Coming-of-Age',
-      format: 'EPUB',
-      size: '1.9 MB',
-      pages: 214,
-      year: 1951,
-      downloads: 1760,
-      rating: 4.3,
-      availableCopies: 2,
-      totalCopies: 5,
-      description: 'Story of Holden Caulfield and his experiences in New York City.',
-      coverColor: '#ef4444',
-      isFeatured: false,
-    },
-    {
-      id: 7,
-      title: 'Brave New World',
-      author: 'Aldous Huxley',
-      category: 'Dystopian',
-      format: 'EPUB',
-      size: '2.7 MB',
-      pages: 268,
-      year: 1932,
-      downloads: 1540,
-      rating: 4.4,
-      availableCopies: 5,
-      totalCopies: 5,
-      description: 'A dystopian novel set in a futuristic World State.',
-      coverColor: '#14b8a6',
-      isFeatured: false,
-    },
-    {
-      id: 8,
-      title: 'Moby Dick',
-      author: 'Herman Melville',
-      category: 'Adventure',
-      format: 'PDF',
-      size: '5.2 MB',
-      pages: 635,
-      year: 1851,
-      downloads: 980,
-      rating: 4.2,
-      availableCopies: 5,
-      totalCopies: 5,
-      description: 'The voyage of the whaling ship Pequod and its captain Ahab.',
-      coverColor: '#6366f1',
-      isFeatured: false,
-    },
-  ];
-
   // Filter e-books
-  const filteredEBooks = mockEBooks.filter(ebook => {
-    const matchesSearch = 
+  const filteredEBooks = ebooks.filter(ebook => {
+    const matchesSearch =
       ebook.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ebook.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ebook.category.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesCategory = selectedCategory === 'All' || ebook.category === selectedCategory;
-    
+
     return matchesSearch && matchesCategory;
   });
 
   // Get unique categories
-  const categories = ['All', ...new Set(mockEBooks.map(ebook => ebook.category))];
+  const categories = ['All', ...new Set(ebooks.map(ebook => ebook.category))];
 
   // Calculate stats
-  const totalEBooks = mockEBooks.length;
-  const totalDownloads = mockEBooks.reduce((sum, ebook) => sum + ebook.downloads, 0);
-  const availableEBooks = mockEBooks.filter(e => e.availableCopies > 0).length;
-  const featuredEBooks = mockEBooks.filter(e => e.isFeatured).length;
+  const totalEBooks = ebooks.length;
+  const totalDownloads = ebooks.reduce((sum, ebook) => sum + ebook.downloads, 0);
 
   // Styles
   const styles = {
@@ -271,14 +171,6 @@ export default function EBooksPage() {
       alignItems: 'center',
       gap: '8px',
       transition: 'all 0.2s',
-    },
-    card: {
-      backgroundColor: colors.cardBg,
-      borderRadius: '16px',
-      padding: '24px',
-      boxShadow: `0 4px 6px ${colors.overlay}`,
-      marginBottom: '24px',
-      border: `1px solid ${colors.border}`,
     },
     statsContainer: {
       display: 'grid',
@@ -350,25 +242,6 @@ export default function EBooksPage() {
       border: `1px solid ${colors.border}`,
       transition: 'transform 0.2s',
     },
-    table: {
-      width: '100%',
-      borderCollapse: 'collapse' as const,
-    },
-    th: {
-      padding: '16px',
-      textAlign: 'left' as const,
-      borderBottom: `2px solid ${colors.border}`,
-      fontSize: '13px',
-      fontWeight: 600,
-      color: colors.textSecondary,
-      backgroundColor: darkMode ? '#374151' : '#f9fafb',
-    },
-    td: {
-      padding: '16px',
-      borderBottom: `1px solid ${colors.border}`,
-      fontSize: '14px',
-      color: colors.text,
-    },
     badge: {
       display: 'inline-block',
       padding: '4px 12px',
@@ -391,41 +264,38 @@ export default function EBooksPage() {
     },
   };
 
-  // Handle actions
-  const handleAction = (action: string, id: number) => {
-    const ebook = mockEBooks.find(e => e.id === id);
-    
-    switch(action) {
-      case 'download':
-        alert(`Starting download of "${ebook?.title}"`);
-        break;
-      case 'preview':
-        alert(`Opening preview of "${ebook?.title}"`);
-        break;
-      case 'edit':
-        alert(`Editing "${ebook?.title}"`);
-        break;
+  const handleDownload = async (ebook: any) => {
+    setDownloading(ebook.id);
+    try {
+      const blob = await ebookAPI.downloadEbook(ebook.id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${ebook.title}.pdf`; // Assuming PDF for now, or use ebook.format
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      // Refresh to update download count if API supports it
+      fetchData();
+    } catch (error) {
+      console.error("Download failed:", error);
+      alert("Failed to download file. Please try again.");
+    } finally {
+      setDownloading(null);
     }
   };
 
   // Get category color
   const getCategoryColor = (category: string) => {
-    switch(category) {
+    switch (category) {
       case 'Classic': return colors.purple;
       case 'Fantasy': return colors.warning;
       case 'Dystopian': return colors.danger;
       case 'Romance': return colors.pink;
       case 'Adventure': return colors.teal;
       default: return colors.primary;
-    }
-  };
-
-  // Get format color
-  const getFormatColor = (format: string) => {
-    switch(format) {
-      case 'EPUB': return colors.success;
-      case 'PDF': return colors.danger;
-      default: return colors.textSecondary;
     }
   };
 
@@ -440,7 +310,7 @@ export default function EBooksPage() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <button 
+          <button
             onClick={() => setDarkMode(!darkMode)}
             style={{
               ...styles.outlineButton,
@@ -450,12 +320,6 @@ export default function EBooksPage() {
           >
             {darkMode ? '☀️ Light' : '🌙 Dark'}
           </button>
-          <Link 
-            href="/ebooks/upload"
-            style={styles.button}
-          >
-            📤 Upload E-Book
-          </Link>
         </div>
       </div>
 
@@ -463,56 +327,39 @@ export default function EBooksPage() {
       <div style={styles.statsContainer}>
         <div style={styles.statCard}>
           <p style={styles.statTitle}>📚 Total E-Books</p>
-          <p style={{ 
+          <p style={{
             ...styles.statValue,
             color: colors.purple,
           }}>
-            {totalEBooks}
+            {loading ? '...' : totalEBooks}
           </p>
           <div style={{ fontSize: '13px', color: colors.textSecondary, marginTop: '4px' }}>
-            {featuredEBooks} featured titles
+            Available titles
           </div>
         </div>
         <div style={styles.statCard}>
           <p style={styles.statTitle}>⬇️ Total Downloads</p>
-          <p style={{ 
+          <p style={{
             ...styles.statValue,
             color: colors.primary,
           }}>
-            {totalDownloads.toLocaleString()}
+            {loading ? '...' : totalDownloads.toLocaleString()}
           </p>
           <div style={{ fontSize: '13px', color: colors.textSecondary, marginTop: '4px' }}>
             All-time downloads
           </div>
         </div>
-        <div style={styles.statCard}>
-          <p style={styles.statTitle}>✅ Available Now</p>
-          <p style={{ 
-            ...styles.statValue,
-            color: colors.success,
-          }}>
-            {availableEBooks}
-          </p>
-          <div style={{ fontSize: '13px', color: colors.textSecondary, marginTop: '4px' }}>
-            Ready for download
-          </div>
-        </div>
-        <div style={styles.statCard}>
-          <p style={styles.statTitle}>⭐ Average Rating</p>
-          <p style={{ 
-            ...styles.statValue,
-            color: colors.warning,
-          }}>
-            4.6
-          </p>
-          <div style={{ fontSize: '13px', color: colors.textSecondary, marginTop: '4px' }}>
-            Based on user reviews
-          </div>
-        </div>
       </div>
 
       {/* Search & Filters */}
-      <div style={styles.card}>
+      <div style={{
+        backgroundColor: colors.cardBg,
+        borderRadius: '16px',
+        padding: '24px',
+        boxShadow: `0 4px 6px ${colors.overlay}`,
+        marginBottom: '24px',
+        border: `1px solid ${colors.border}`,
+      }}>
         <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
           <input
             type="text"
@@ -521,70 +368,22 @@ export default function EBooksPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             style={styles.searchInput}
           />
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button 
-              onClick={() => setViewMode('grid')}
+          {categories.map(category => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
               style={{
                 ...styles.filterButton,
-                ...(viewMode === 'grid' ? styles.activeFilter : {})
+                ...(selectedCategory === category ? {
+                  background: `linear-gradient(135deg, ${getCategoryColor(category)}, ${getCategoryColor(category)}dd)`,
+                  color: 'white',
+                  borderColor: getCategoryColor(category),
+                } : {})
               }}
             >
-              📱 Grid
+              {category}
             </button>
-            <button 
-              onClick={() => setViewMode('list')}
-              style={{
-                ...styles.filterButton,
-                ...(viewMode === 'list' ? styles.activeFilter : {})
-              }}
-            >
-              📋 List
-            </button>
-          </div>
-          <button 
-            onClick={() => setShowFilters(!showFilters)}
-            style={styles.outlineButton}
-          >
-            {showFilters ? '▲ Hide' : '▼ Filters'}
-          </button>
-        </div>
-
-        {showFilters && (
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ marginBottom: '12px', fontSize: '14px', color: colors.text }}>
-              Filter by Category:
-            </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {categories.map(category => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  style={{
-                    ...styles.filterButton,
-                    ...(selectedCategory === category ? {
-                      background: `linear-gradient(135deg, ${getCategoryColor(category)}, ${getCategoryColor(category)}dd)`,
-                      color: 'white',
-                      borderColor: getCategoryColor(category),
-                    } : {})
-                  }}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          marginTop: '20px',
-        }}>
-          <div style={{ fontSize: '14px', color: colors.textSecondary }}>
-            Showing {filteredEBooks.length} e-books
-            {selectedCategory !== 'All' && ` • Category: ${selectedCategory}`}
-          </div>
+          ))}
         </div>
       </div>
 
@@ -593,40 +392,24 @@ export default function EBooksPage() {
         <div style={{ textAlign: 'center', padding: '60px 20px', color: colors.textSecondary }}>
           <div style={{ fontSize: '64px', marginBottom: '16px', opacity: 0.5 }}>📱</div>
           <div style={{ fontSize: '24px', color: colors.text, marginBottom: '12px' }}>
-            No e-books found
+            {loading ? 'Loading library...' : 'No e-books found'}
           </div>
-          <div>Try adjusting your search or filters</div>
+          {!loading && <div>Try adjusting your search or filters</div>}
         </div>
-      ) : viewMode === 'grid' ? (
+      ) : (
         /* Grid View */
         <div style={styles.gridContainer}>
           {filteredEBooks.map(ebook => (
             <div key={ebook.id} style={styles.ebookCard}>
               {/* Header */}
-              <div style={{ 
-                padding: '24px', 
+              <div style={{
+                padding: '24px',
                 background: `linear-gradient(135deg, ${ebook.coverColor}, ${ebook.coverColor}dd)`,
                 position: 'relative',
               }}>
-                {ebook.isFeatured && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '16px',
-                    right: '16px',
-                    background: colors.warning,
-                    color: 'white',
-                    padding: '4px 12px',
-                    borderRadius: '20px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                  }}>
-                    ⭐ Featured
-                  </div>
-                )}
-                
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ 
-                    width: '60px', 
+                  <div style={{
+                    width: '60px',
                     height: '80px',
                     backgroundColor: 'white',
                     borderRadius: '8px',
@@ -641,9 +424,9 @@ export default function EBooksPage() {
                     📖
                   </div>
                   <div>
-                    <div style={{ 
-                      fontSize: '18px', 
-                      fontWeight: 'bold', 
+                    <div style={{
+                      fontSize: '18px',
+                      fontWeight: 'bold',
                       color: 'white',
                       marginBottom: '4px',
                     }}>
@@ -659,11 +442,16 @@ export default function EBooksPage() {
               {/* Content */}
               <div style={{ padding: '24px' }}>
                 {/* Description */}
-                <div style={{ 
-                  fontSize: '14px', 
+                <div style={{
+                  fontSize: '14px',
                   color: colors.textSecondary,
                   marginBottom: '20px',
                   lineHeight: '1.5',
+                  height: '60px',
+                  overflow: 'hidden',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: 'vertical',
                 }}>
                   {ebook.description}
                 </div>
@@ -672,8 +460,8 @@ export default function EBooksPage() {
                 <div style={{ marginBottom: '20px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                     <span style={{ fontSize: '13px', color: colors.textSecondary }}>Category</span>
-                    <span style={{ 
-                      fontSize: '13px', 
+                    <span style={{
+                      fontSize: '13px',
                       fontWeight: 600,
                       color: getCategoryColor(ebook.category),
                     }}>
@@ -682,10 +470,10 @@ export default function EBooksPage() {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                     <span style={{ fontSize: '13px', color: colors.textSecondary }}>Format</span>
-                    <span style={{ 
-                      fontSize: '13px', 
+                    <span style={{
+                      fontSize: '13px',
                       fontWeight: 600,
-                      color: getFormatColor(ebook.format),
+                      color: colors.success,
                     }}>
                       {ebook.format}
                     </span>
@@ -698,213 +486,31 @@ export default function EBooksPage() {
                     <span style={{ fontSize: '13px', color: colors.textSecondary }}>Downloads</span>
                     <span style={{ fontSize: '13px', fontWeight: 600 }}>{ebook.downloads.toLocaleString()}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '13px', color: colors.textSecondary }}>Rating</span>
-                    <span style={{ fontSize: '13px', fontWeight: 600 }}>
-                      ⭐ {ebook.rating} / 5.0
-                    </span>
-                  </div>
-                </div>
-
-                {/* Availability */}
-                <div style={{ 
-                  backgroundColor: darkMode ? '#374151' : '#f9fafb',
-                  padding: '12px',
-                  borderRadius: '8px',
-                  marginBottom: '20px',
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: '13px', color: colors.textSecondary }}>
-                        Available Copies
-                      </div>
-                      <div style={{ fontSize: '16px', fontWeight: 'bold' }}>
-                        {ebook.availableCopies}/{ebook.totalCopies}
-                      </div>
-                    </div>
-                    <div style={{
-                      width: '12px',
-                      height: '12px',
-                      borderRadius: '50%',
-                      backgroundColor: ebook.availableCopies > 0 ? colors.success : colors.danger,
-                    }} />
-                  </div>
                 </div>
 
                 {/* Action Buttons */}
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button 
-                    onClick={() => handleAction('download', ebook.id)}
+                  <button
+                    onClick={() => handleDownload(ebook)}
+                    disabled={downloading === ebook.id}
                     style={{
                       ...styles.smallButton,
                       flex: 1,
-                      background: ebook.availableCopies > 0 
-                        ? `linear-gradient(135deg, ${colors.success}, ${colors.secondary})`
-                        : colors.border,
-                      color: ebook.availableCopies > 0 ? 'white' : colors.textSecondary,
+                      background: `linear-gradient(135deg, ${colors.success}, ${colors.secondary})`,
+                      color: 'white',
                       border: 'none',
-                      cursor: ebook.availableCopies > 0 ? 'pointer' : 'not-allowed',
-                    }}
-                    disabled={ebook.availableCopies === 0}
-                  >
-                    ⬇️ {ebook.availableCopies > 0 ? 'Download' : 'Unavailable'}
-                  </button>
-                  <button 
-                    onClick={() => handleAction('preview', ebook.id)}
-                    style={{
-                      ...styles.smallButton,
-                      borderColor: colors.primary,
-                      color: colors.primary,
+                      justifyContent: 'center',
+                      opacity: downloading === ebook.id ? 0.7 : 1,
                     }}
                   >
-                    👁️ Preview
+                    {downloading === ebook.id ? '⏳ Downloading...' : '⬇️ Download'}
                   </button>
                 </div>
               </div>
             </div>
           ))}
         </div>
-      ) : (
-        /* List View */
-        <div style={styles.card}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Book Details</th>
-                  <th style={styles.th}>Category</th>
-                  <th style={styles.th}>Format</th>
-                  <th style={styles.th}>Downloads</th>
-                  <th style={styles.th}>Rating</th>
-                  <th style={styles.th}>Availability</th>
-                  <th style={styles.th}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEBooks.map(ebook => (
-                  <tr key={ebook.id}>
-                    <td style={styles.td}>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '15px' }}>
-                          {ebook.title}
-                        </div>
-                        <div style={{ fontSize: '13px', color: colors.textSecondary }}>
-                          {ebook.author} • {ebook.year} • {ebook.pages} pages
-                        </div>
-                        {ebook.isFeatured && (
-                          <span style={{ 
-                            ...styles.badge,
-                            background: colors.warning,
-                            color: 'white',
-                            marginTop: '4px',
-                          }}>
-                            ⭐ Featured
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td style={styles.td}>
-                      <span style={{ 
-                        ...styles.badge,
-                        background: `${getCategoryColor(ebook.category)}20`,
-                        color: getCategoryColor(ebook.category),
-                        border: `1px solid ${getCategoryColor(ebook.category)}40`,
-                      }}>
-                        {ebook.category}
-                      </span>
-                    </td>
-                    <td style={styles.td}>
-                      <span style={{ 
-                        ...styles.badge,
-                        background: `${getFormatColor(ebook.format)}20`,
-                        color: getFormatColor(ebook.format),
-                        border: `1px solid ${getFormatColor(ebook.format)}40`,
-                      }}>
-                        {ebook.format}
-                      </span>
-                    </td>
-                    <td style={styles.td}>
-                      <div style={{ fontWeight: 600 }}>
-                        {ebook.downloads.toLocaleString()}
-                      </div>
-                      <div style={{ fontSize: '12px', color: colors.textSecondary }}>
-                        {ebook.size}
-                      </div>
-                    </td>
-                    <td style={styles.td}>
-                      <div style={{ fontWeight: 600 }}>
-                        ⭐ {ebook.rating}
-                      </div>
-                    </td>
-                    <td style={styles.td}>
-                      <div>
-                        <div style={{ fontWeight: 600 }}>
-                          {ebook.availableCopies}/{ebook.totalCopies}
-                        </div>
-                        <div style={{ 
-                          fontSize: '12px', 
-                          color: ebook.availableCopies > 0 ? colors.success : colors.danger,
-                        }}>
-                          {ebook.availableCopies > 0 ? 'Available' : 'Unavailable'}
-                        </div>
-                      </div>
-                    </td>
-                    <td style={styles.td}>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button 
-                          onClick={() => handleAction('download', ebook.id)}
-                          style={{
-                            ...styles.smallButton,
-                            background: ebook.availableCopies > 0 
-                              ? `linear-gradient(135deg, ${colors.success}, ${colors.secondary})`
-                              : colors.border,
-                            color: ebook.availableCopies > 0 ? 'white' : colors.textSecondary,
-                            border: 'none',
-                            cursor: ebook.availableCopies > 0 ? 'pointer' : 'not-allowed',
-                          }}
-                          disabled={ebook.availableCopies === 0}
-                        >
-                          ⬇️
-                        </button>
-                        <button 
-                          onClick={() => handleAction('preview', ebook.id)}
-                          style={styles.smallButton}
-                        >
-                          👁️
-                        </button>
-                        <button 
-                          onClick={() => handleAction('edit', ebook.id)}
-                          style={{
-                            ...styles.smallButton,
-                            borderColor: colors.primary,
-                            color: colors.primary,
-                          }}
-                        >
-                          ✏️
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
       )}
-
-      {/* Footer */}
-      <div style={{
-        marginTop: '40px',
-        paddingTop: '24px',
-        borderTop: `1px solid ${colors.border}`,
-        color: colors.textSecondary,
-        fontSize: '14px',
-        textAlign: 'center',
-      }}>
-        <p style={{ margin: '0' }}>
-          📱 Digital Library • Supported formats: EPUB, PDF • Max loan period: 14 days
-        </p>
-      </div>
     </div>
   );
 }

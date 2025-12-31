@@ -211,8 +211,8 @@ export const transactionAPI = {
         });
     },
 
-    getHistory: async (member_id?: string, page: number = 1) => {
-        const url = `/transactions/history?page=${page}${member_id ? `&member_id=${member_id}` : ''}`;
+    getHistory: async (member_id?: string, page: number = 1, page_size: number = 100) => {
+        const url = `/transactions/history?page=${page}&page_size=${page_size}${member_id ? `&member_id=${member_id}` : ''}`;
         return fetchWithAuth(url);
     },
 
