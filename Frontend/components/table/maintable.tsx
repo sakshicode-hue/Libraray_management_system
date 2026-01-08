@@ -54,7 +54,7 @@ interface Lendedinfo {
   Available_Copies: number
   Date: Date
 }
-export function ProductsGrid<TData extends { id: string | number; name: string; price: number, Author: string, Language: string, Available_Copies: number, Status: string, Category: string, Pages: number }>({
+export function ProductsGrid<TData extends { id: string | number; name: string; price: number, Author: string, Language: string, Available_Copies: number, Status: string, Category: string, Pages: number, image_url?: string }>({
   data,
   columns,
   pageSize: initialPageSize = 6,
@@ -347,7 +347,7 @@ export function ProductsGrid<TData extends { id: string | number; name: string; 
               className="w-full max-w-[500px]  bg-white rounded-2xl shadow-md "
             >
               <motion.div layoutId={`image-${active.id}-${id}`}>
-                <ProductImageCell id={active.id} />
+                <ProductImageCell id={active.id} image_url={active.image_url} />
               </motion.div>
               <div className="p-5 space-y-2 flex flex-col gap-1.5">
                 <motion.h3 layoutId={`title-${active.id}-${id}`} className="text-lg font-semibold flex items-baseline justify-between">
@@ -359,7 +359,7 @@ export function ProductsGrid<TData extends { id: string | number; name: string; 
                 </motion.h3>
                 <motion.div className="flex items-center gap-1 text-[#526b79]">
                   <div className="font-semibold">Price :</div>
-                  <div>PKR {active.price}</div>
+                  <div>Rs {active.price}</div>
 
                 </motion.div>
                 <motion.div className="flex items-center gap-1 ">
@@ -440,7 +440,7 @@ export function ProductsGrid<TData extends { id: string | number; name: string; 
                   className="cursor-pointer bg-white rounded-t-lg shadow-sm hover:shadow-md transition"
                 >
                   <motion.div layoutId={`image-${product.id}-${id}`}>
-                    <ProductImageCell id={product.id} />
+                    <ProductImageCell id={product.id} image_url={product.image_url} />
                   </motion.div>
                   <div className="mt-2">
                     <motion.h2 layoutId={`title-${product.id}-${id}`} className="text-lg font-semibold m-3">
@@ -448,7 +448,7 @@ export function ProductsGrid<TData extends { id: string | number; name: string; 
                     </motion.h2>
                     <div className="flex items-center justify-between">
 
-                      <p className="text-gray-600 m-3">PKR {product.price}</p>
+                      <p className="text-gray-600 m-3">Rs {product.price}</p>
                       <Badge status={product.Status} />
                     </div>
 

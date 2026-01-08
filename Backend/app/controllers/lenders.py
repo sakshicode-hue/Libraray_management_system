@@ -9,7 +9,7 @@ def get_lendings(lender: Lenderget):
     conn=get_connection()
     cursor=conn.cursor()
     try:
-       cursor.execute("SELECT * FROM borrower WHERE user_id=%s", (lender.user_id,))
+       cursor.execute("SELECT Borrower_ID, user_id, Name, BookTitle, Category, Author, IssuedDate, DueDate, CopiesLent, FinePerDay, Price, Book_ID, Status FROM borrower WHERE user_id=%s", (lender.user_id,))
        result=cursor.fetchall()
        keys=["Borrower_ID", "user_id", "Name", "BookTitle","Category", "Author", "IssuedDate", "DueDate", "CopiesLent", "FinePerDay", "Price", "Book_ID","Status"]
        lendings_dict_list = [dict(zip(keys, lending)) for lending in result]

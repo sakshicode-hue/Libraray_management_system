@@ -27,15 +27,71 @@ const Catalog = () => {
   const [Loading, setLoading] = useState(true)
   const { datafetcher, setDatafetcher } = useDataFetcher();
   const fetch_data = async () => {
-    const data = await fetch("/req/books/getall")
-    if (!data.ok) {
+    try {
+      const data = await fetch("/req/books/getall", {
+        credentials: "include"
+      })
+
+      // Handle authentication errors
+      if (data.status === 401 || data.status === 403) {
+        toast.error("Please login to view the books catalog")
+        // Redirect to login page after a short delay
+        setTimeout(() => {
+          window.location.href = "/"
+        }, 1500)
+        return
+      }
+
+      if (!data.ok) {
+        const res = await data.json()
+        toast.error(`Unable to fetch books: ${res.detail || "Unknown error"}`)
+        setLoading(false)
+        return
+      }
+
       const res = await data.json()
-      toast.error("Unable to fetch data")
-      return
+
+      // Debug logging
+      console.log("=== BOOKS API RESPONSE DEBUG ===")
+      console.log("Response type:", typeof res)
+      console.log("Is array:", Array.isArray(res))
+      console.log("Length:", res?.length)
+      if (res && res.length > 0) {
+        console.log("First book keys:", Object.keys(res[0]))
+        console.log("First book data:", res[0])
+      } else {
+        console.log("⚠️ WARNING: No books in response!")
+      }
+      console.log("=== END DEBUG ===")
+
+      // Transform database column names to match frontend expectations
+      const transformedData = res.map((book: any) => ({
+        id: book.book_id || book.Book_ID || book.id,
+        name: book.book_title || book.Book_Title || book.name || "Unknown Title",
+        price: book.price || book.Price || 0,
+        Author: book.author || book.Author || "Unknown Author",
+        Language: book.language || book.Language || "Unknown",
+        Available_Copies: book.available || book.Available || book.Available_Copies || 0,
+        Status: book.status || book.Status || "Unknown",
+        Category: book.category || book.Category || "Uncategorized",
+        Pages: book.pages || book.Pages || 0,
+        image_url: book.image_url || book.Image_URL || undefined
+      }))
+
+      console.log("=== TRANSFORMED DATA ===")
+      console.log("Transformed count:", transformedData.length)
+      if (transformedData.length > 0) {
+        console.log("First transformed book:", transformedData[0])
+      }
+      console.log("=== END TRANSFORMED ===")
+
+      setBookData(transformedData)
+      setLoading(false)
+    } catch (error) {
+      console.error("Error fetching books:", error)
+      toast.error("Network error. Please check your connection.")
+      setLoading(false)
     }
-    const res = await data.json()
-    setBookData(res)
-    setLoading(false)
   }
   useEffect(() => {
     fetch_data()
@@ -46,9 +102,9 @@ const Catalog = () => {
 
   useEffect(() => {
     if (BookData.length > 0) {
-      setLangugesFilter(["All", ...new Set(BookData.map((item: any) => item.Language))])
-      setAuthorFilter(["All", ...new Set(BookData.map((item: any) => item.Author))])
-      setSetstatusFilter(["All", ...new Set(BookData.map((item: any) => item.Status))])
+      setLangugesFilter(["All", ...new Set(BookData.map((item: any) => item.Language).filter(Boolean))])
+      setAuthorFilter(["All", ...new Set(BookData.map((item: any) => item.Author).filter(Boolean))])
+      setSetstatusFilter(["All", ...new Set(BookData.map((item: any) => item.Status).filter(Boolean))])
     }
     return () => {
 

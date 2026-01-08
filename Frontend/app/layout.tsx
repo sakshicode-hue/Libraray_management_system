@@ -8,6 +8,7 @@ import { ReturnProvider } from '@/lib/ReturnDetails';
 import { DeleteModal } from '@/lib/DeleteModal';
 import { SubmitmodalProvider } from '@/lib/Submitmodal';
 import { NotificationsProvider } from '@/lib/notifications';
+import { ChatWidget } from '@/components/ChatWidget';
 
 const lato = Lato({
   variable: "--font-lato",
@@ -46,7 +47,7 @@ export const metadata: Metadata = {
     siteName: 'XLMS',
     images: [
       {
-        url: 'https://xlms-client.netlify.app/Main.jpeg', 
+        url: 'https://xlms-client.netlify.app/Main.jpeg',
         width: 1200,
         height: 630,
         alt: 'XLMS Library Management System',
@@ -67,8 +68,8 @@ export const metadata: Metadata = {
     icon: '/favicon.ico',
   },
   category: 'Library Management',
-  verification:{
-    google:'o67PCilh0c_X6cE6fU1uklcWQGbAo6hRGuPT4minHxM'
+  verification: {
+    google: 'o67PCilh0c_X6cE6fU1uklcWQGbAo6hRGuPT4minHxM'
   }
 }
 export default function RootLayout({
@@ -88,6 +89,7 @@ export default function RootLayout({
                     <SubmitmodalProvider>
 
                       {children}
+                      <ChatWidget />
                     </SubmitmodalProvider>
                   </DeleteModal>
                 </ReturnProvider>

@@ -8,13 +8,14 @@ def get_books():
     conn=get_connection()
     cursor=conn.cursor()
     try:
-       cursor.execute("SELECT Book_ID, Book_Title, Author, Category, Language, Status, Pages, Price, Available FROM books")
-       result=cursor.fetchall()
-       keys=["id", "name", "Author", "Category", "Language", "Status", "Pages", "price", "Available_Copies"]
-       books_dict_list = [dict(zip(keys, book)) for book in result]
+       cursor.execute("SELECT * FROM books")
+       result = cursor.fetchall()
+       cols = [desc[0] for desc in cursor.description]
+       books_dict_list = [dict(zip(cols, book)) for book in result]
        return books_dict_list
-    except Exception as e:  
-        raise HTTPException(status_code=500, detail=f"Database error {e}",)
+    except Exception as e:
+        print(f"Database error in get_books: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     finally:
         conn.close()
 
@@ -60,7 +61,7 @@ def lend_book(book:LendBook):
         else:
             conn.execute("UPDATE Books SET Available=%s WHERE Book_ID=%s", (str(int(category[4]) - int(book.CopiesLent)), book.book_id))
         conn.commit()
-        conn.execute("UPDATE users SET Cost=%s WHERE User_id=%s", (str(int(user[1]) + int(book.CopiesLent) * int(category[1])* (book.DueDate - book.IssuedDate).days)), book.user_id)
+        conn.execute("UPDATE users SET Cost=%s WHERE User_id=%s", (str(float(user[1]) + int(book.CopiesLent) * float(category[1])* (book.DueDate - book.IssuedDate).days)), book.user_id)
         conn.commit()
         add_notification(Notification_ADD(UserId=book.user_id, Message=f"You have borrowed {category[2]} from {book.IssuedDate.strftime('%d/%m/%Y')} to {book.DueDate.strftime('%d/%m/%Y')}   ", IsRead=0, CreatedAt=datetime.now().strftime("%d/%m/%Y, %H:%M:%S")))
         return {"message": "Book lent successfully."}
